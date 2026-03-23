@@ -1,0 +1,10 @@
+{
+  "name": "@financeos/contract",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@ts-rest/core": "^3.52.1",
+    "zod": "^3.25.76"
+  }
+}

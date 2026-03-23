@@ -1,5 +1,5 @@
 {
-  "name": "@repo/eslint-config",
+  "name": "@financeos/eslint-config",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -11,7 +11,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@next/eslint-plugin-next": "^16.2.0",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-only-warn": "^1.1.0",
     "eslint-plugin-react": "^7.37.5",

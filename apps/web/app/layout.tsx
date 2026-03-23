@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import "./globals.css";
+import "@financeos/ui/styles.css";
+import { Lora } from "next/font/google";
+import { cn } from "@financeos/ui/lib/utils";
+
+const lora = Lora({subsets:['latin'],variable:'--font-serif'});
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -22,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-serif", lora.variable)}>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
       </body>

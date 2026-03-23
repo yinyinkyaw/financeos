@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "radix-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@financeos/ui/components",
+    "utils": "@financeos/ui/lib/utils",
+    "ui": "@financeos/ui/components/ui",
+    "lib": "@financeos/ui/lib",
+    "hooks": "@financeos/ui/hooks"
+  },
+  "iconLibrary": "lucide",
+  "rtl": false,
+  "menuColor": "inverted",
+  "menuAccent": "bold"
+}
