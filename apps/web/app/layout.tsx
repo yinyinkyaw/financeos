@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lora } from "next/font/google";
 import "@financeos/ui/styles.css";
+import { Toaster } from "@financeos/ui/components/ui/sonner";
 
 const lora = Lora({
   subsets: ["latin"],
@@ -19,7 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={lora.className}>{children}</body>
+      <body className={lora.className} suppressHydrationWarning>
+        {children}
+        <Toaster richColors />
+      </body>
     </html>
   );
 }
