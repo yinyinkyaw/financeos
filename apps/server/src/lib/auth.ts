@@ -1,16 +1,15 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "../db/index";
+import { db } from "@/db/index";
 import * as schema from "@/db/schema";
-import { getServerEnv } from "env";
+import { getServerEnv } from "../../env";
 
 const {
   BETTER_AUTH_URL,
   FRONTEND_URL,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-} =
-  getServerEnv();
+} = getServerEnv();
 export const auth = betterAuth({
   baseURL: BETTER_AUTH_URL,
   trustedOrigins: [FRONTEND_URL],
@@ -29,3 +28,6 @@ export const auth = betterAuth({
     },
   }),
 });
+
+export type AuthSession = typeof auth.$Infer.Session.session;
+export type AuthUser = typeof auth.$Infer.Session.user;

@@ -1,5 +1,12 @@
 import { relations, sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+  type AnySQLiteColumn,
+} from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -102,6 +109,93 @@ export const sessionRelations = relations(session, ({ one }) => ({
 export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, {
     fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const categories = sqliteTable(
+  "categories",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    type: text("type", {
+      enum: ["income", "expense"],
+    }).notNull(),
+    color: text("color"),
+    parentId: text("parent_id").references(
+      (): AnySQLiteColumn => categories.id,
+      {
+        onDelete: "set null",
+      },
+    ),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000))`)
+      .$onUpdate(() => /* @_PURE_ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("categories_userId_idx").on(table.userId)],
+);
+
+export const categoryRelations = relations(categories, ({ one, many }) => ({
+  user: one(user, {
+    fields: [categories.userId],
+    references: [user.id],
+  }),
+  parent: one(categories, {
+    fields: [categories.parentId],
+    references: [categories.id],
+    relationName: "category_parent",
+  }),
+  children: many(categories, {
+    relationName: "category_parent",
+  }),
+}));
+
+export const transactions = sqliteTable(
+  "transactions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    bankAccountId: text("bank_account_id").notNull(),
+    toAccountId: text("to_account_id"),
+    categoryId: text("category_id"),
+    type: text("type", {
+      enum: ["income", "expense", "transfer"],
+    }).notNull(),
+    amount: real("amount").notNull(),
+    description: text("description").notNull(),
+    date: text("date").notNull(),
+    status: text("status", {
+      enum: ["completed", "pending"],
+    })
+      .default("completed")
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("transactions_userId_idx").on(table.userId),
+    index("transactions_bankAccountId_idx").on(table.bankAccountId),
+    index("transactions_date_idx").on(table.date),
+  ],
+);
+
+export const transactionRelations = relations(transactions, ({ one }) => ({
+  user: one(user, {
+    fields: [transactions.userId],
     references: [user.id],
   }),
 }));

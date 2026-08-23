@@ -1,24 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { GalleryVerticalEnd, Loader2 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { useActionState } from "react";
-import { cn } from "@financeos/ui/lib/utils";
+import { z } from "zod";
+
+import { authClient } from "@/lib/auth-client";
+import DashboardImage from "@/public/dashboard-illustration.png";
+import { PasswordField } from "@/components/password-field";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
-} from "@financeos/ui/components/ui/field";
-import { Input } from "@financeos/ui/components/ui/input";
-import { Button } from "@financeos/ui";
-import z from "zod";
-import { PasswordField } from "@financeos/ui/components/PassowrdField";
-import DashboardImage from "@/public/dashboard-illustration.png";
-import Image from "next/image";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "@financeos/ui/components/ui/sonner";
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function Signin() {
   return (
@@ -160,7 +160,11 @@ function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
           Login with Google
         </Button>
       </Field>
-      <FieldSeparator>Or continue with</FieldSeparator>
+      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <div aria-hidden="true" className="h-px flex-1 bg-border" />
+        <span className="shrink-0">Or continue with</span>
+        <div aria-hidden="true" className="h-px flex-1 bg-border" />
+      </div>
       <form
         {...props}
         action={formAction}

@@ -1,13 +1,9 @@
 import { config } from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { expand } from "dotenv-expand";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-config({ path: path.resolve(__dirname, ".env") });
+expand(config());
 
 export const getServerEnv = () =>
   createEnv({

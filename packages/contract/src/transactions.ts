@@ -1,32 +1,49 @@
 import { initContract } from "@ts-rest/core";
-import z from "zod";
+import { z } from "zod";
 
 const c = initContract();
 
-const transactionSchema = z.object({
+export const transactionTypeSchema = z.enum(["income", "expense", "transfer"]);
+export const transactionStatusSchema = z.enum(["completed", "pending"]);
+
+export const transactionSchema = z.object({
   id: z.string(),
   userId: z.string(),
   bankAccountId: z.string(),
   toAccountId: z.string().nullable(), // only popualated for transfers
   categoryId: z.string().nullable(), // null for transfers
-  type: z.enum(["income", "expense", "transfer"]),
+  type: transactionTypeSchema,
   amount: z.number(),
   description: z.string(),
   date: z.string(),
-  status: z.enum(["completed", "pending"]),
+  status: transactionStatusSchema,
   createdAt: z.string(),
+});
+
+export const listTransactionsQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  offset: z.coerce.number().int().nonnegative().optional(),
+  type: transactionTypeSchema.optional(),
+  bankAccountId: z.string().optional(),
+  status: transactionStatusSchema.optional(),
+});
+
+export const createTransactionBodySchema = z.object({
+  type: transactionTypeSchema,
+  amount: z.number().positive(),
+  description: z.string().min(1),
+  bankAccountId: z.string(),
+  toAccountId: z.string().optional(), // required when type is 'transfer'
+  categoryId: z.string().optional(), // required when type is 'income' or 'expense'
+  date: z.string(),
+  status: transactionStatusSchema.default("completed"),
 });
 
 export const transactionContract = c.router({
   list: {
     method: "GET",
     path: "/transactions",
-    query: z.object({
-      limit: z.coerce.number().optional(),
-      offset: z.coerce.number().optional(),
-      type: z.enum(["income", "expense", "transfer"]).optional(),
-      bank_account: z.enum(["checking", "savings", "wallet", "cash"]),
-    }),
+    query: listTransactionsQuerySchema,
     responses: {
       200: z.array(transactionSchema),
       401: z.object({ message: z.string() }),
@@ -35,16 +52,7 @@ export const transactionContract = c.router({
   create: {
     method: "POST",
     path: "/transactions",
-    body: z.object({
-      type: z.enum(["income", "expense", "transfer"]),
-      amount: z.number(),
-      description: z.string(),
-      bankAccountId: z.string(),
-      toAccountId: z.string().optional(), // required when type is 'transfer'
-      categoryId: z.string().optional(), // required when type is 'income' or 'expense'
-      date: z.string(),
-      status: z.enum(["completed", "pending"]).default("completed"),
-    }),
+    body: createTransactionBodySchema,
     responses: {
       201: transactionSchema,
       400: z.object({ message: z.string() }),
@@ -52,3 +60,7 @@ export const transactionContract = c.router({
     },
   },
 });
+
+export type Transaction = z.infer<typeof transactionSchema>;
+export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;
+export type CreateTransactionBody = z.infer<typeof createTransactionBodySchema>;

@@ -8,6 +8,20 @@
       "when": 1774536065495,
       "tag": "0000_busy_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1774772871113,
+      "tag": "0001_brown_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1774835362978,
+      "tag": "0002_boring_kingpin",
+      "breakpoints": true
     }
   ]
 }

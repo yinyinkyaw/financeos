@@ -1,20 +1,24 @@
 import { initContract } from "@ts-rest/core";
-import z from "zod";
+import { z } from "zod";
 
 const c = initContract();
 
 const categorySchema = z.object({
+  id: z.string(),
   name: z.string(),
   type: z.enum(["income", "expense"]),
-  color: z.string().optional(),
+  color: z.string().nullable(),
   parent: z
     .object({
+      id: z.string(),
       name: z.string(),
       type: z.enum(["income", "expense"]),
-      color: z.string().optional(),
+      color: z.string().nullable(),
     })
     .nullable(), // null = top-level category, set = child category
 });
+
+export type Category = z.infer<typeof categorySchema>;
 
 export const categoryContract = c.router({
   list: {

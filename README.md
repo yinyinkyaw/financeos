@@ -16,9 +16,9 @@ This Turborepo includes the following packages/apps:
 
 ### Apps and Packages
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@financeos/ui`: a stub React component library shared by both `web` and `docs` applications
+- `@financeos/web`: the Next.js application, including its local shadcn component registry
+- `@financeos/server`: the backend service
+- `@financeos/contract`: shared API contracts
 - `@financeos/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
 - `@financeos/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
