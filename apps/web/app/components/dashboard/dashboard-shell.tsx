@@ -1,86 +1,42 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { AppSidebar } from "@/app/components/dashboard/sidebar"
-import { Overview } from "./overview"
-import { ComingSoon } from "./coming-soon"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import { useState } from 'react';
+import { AppSidebar, type DashboardPage } from '@/app/components/dashboard/sidebar';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { BalanceCard } from './balance-card';
 
-const pages: Record<string, { label: string }> = {
-  overview: { label: "Overview" },
-  transactions: { label: "Transactions" },
-  budget: { label: "Budget" },
-  investments: { label: "Investments" },
-  reports: { label: "Reports" },
-  settings: { label: "Settings" },
-}
+const pages: Record<DashboardPage, { label: string }> = {
+  overview: { label: 'Overview' },
+  wallets: { label: 'Wallets' },
+  transactions: { label: 'Transactions' },
+};
 
 export function DashboardShell() {
-  const [activeTab, setActiveTab] = useState("overview")
-
-  const currentPage = pages[activeTab] ?? pages.overview!
+  const [activePage, setActivePage] = useState<DashboardPage>('overview');
+  const currentPage = pages[activePage];
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar activePage={activePage} onPageChange={setActivePage} />
       <SidebarInset>
-        <header className="bg-background sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
-          <Breadcrumb>
+        <header className='sticky top-0 z-10 flex h-14 shrink-0 items-center border-b bg-background px-3 md:h-16 md:px-4'>
+          <SidebarTrigger className='md:hidden' />
+          <Breadcrumb className='hidden md:block'>
             <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setActiveTab("overview")
-                  }}
-                >
-                  FinanceOS
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
-                <BreadcrumbPage>{currentPage.label}</BreadcrumbPage>
+                <BreadcrumbPage className='text-balance text-sm font-medium sm:text-base'>
+                  {currentPage.label}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-
-          <span className="ml-auto hidden text-xs text-muted-foreground sm:block">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
         </header>
 
-        <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
-          {activeTab === "overview" ? (
-            <Overview />
-          ) : (
-            <ComingSoon pageName={currentPage.label} />
-          )}
+        <div className='flex flex-1 flex-col gap-4 p-4 lg:p-4'>
+          <BalanceCard balance={5_000} />
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
