@@ -150,9 +150,6 @@ export const category = sqliteTable('category', {
     .references(() => user.id, { onDelete: 'cascade' }),
   parentId: text('parentId'),   // null = top-level category, set = child category
   name: text('name').notNull(),
-  type: text('type', {
-    enum: ['income', 'expense']
-  }).notNull(),
   color: text('color'),
   createdAt: text('createdAt').notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -164,25 +161,27 @@ export type NewCategory = typeof category.$inferInsert
 
 `parentId` is a self-reference that enables one level of hierarchy — matching the colon-separated hierarchy in your hledger file (`expenses:shopping:clothes` becomes a `Shopping` parent with a `Clothes` child). Top-level categories have `parentId = null`. Child categories point to their parent's `id`.
 
+Categories are neutral labels and can be reused for either income or expense. Transaction kind is determined by account endpoints, so storing a second classification on the category would create an unnecessary consistency rule.
+
 Your hledger categories seed as:
 
-| `name` | `type` | `parentId` |
-|---|---|---|
-| Food | expense | null |
-| Meal | expense | food-id |
-| Shopping | expense | null |
-| Clothes | expense | shopping-id |
-| Meat | expense | shopping-id |
-| Veges | expense | shopping-id |
-| Utilities | expense | shopping-id |
-| Bodycare | expense | null |
-| Softener | expense | bodycare-id |
-| Healthcare | expense | null |
-| Laundry | expense | healthcare-id |
-| Bills | expense | null |
-| Home | expense | bills-id |
-| Rent & Utilities | expense | null |
-| Income | income | null |
+| `name` | `parentId` |
+|---|---|
+| Food | null |
+| Meal | food-id |
+| Shopping | null |
+| Clothes | shopping-id |
+| Meat | shopping-id |
+| Veges | shopping-id |
+| Utilities | shopping-id |
+| Bodycare | null |
+| Softener | bodycare-id |
+| Healthcare | null |
+| Laundry | healthcare-id |
+| Bills | null |
+| Home | bills-id |
+| Rent & Utilities | null |
+| Income | null |
 
 ---
 
@@ -194,15 +193,12 @@ export const transaction = sqliteTable('transaction', {
     .$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  bankAccountId: text('bankAccountId').notNull()
+  fromAccountId: text('fromAccountId')
     .references(() => bankAccount.id),
   toAccountId: text('toAccountId')
-    .references(() => bankAccount.id),   // only used when type = 'transfer'
+    .references(() => bankAccount.id),
   categoryId: text('categoryId')
     .references(() => category.id),      // null for transfers
-  type: text('type', {
-    enum: ['income', 'expense', 'transfer']
-  }).notNull().default('expense'),
   amount: real('amount').notNull(),
   description: text('description').notNull(),
   date: text('date').notNull(),
@@ -217,13 +213,15 @@ export type Transaction = typeof transaction.$inferSelect
 export type NewTransaction = typeof transaction.$inferInsert
 ```
 
-Three transaction types come from your hledger file:
+Transaction kind is derived from the nullable account endpoints:
 
-**Expense** — money leaves an account to pay for something. `bankAccountId` is the source, `categoryId` is set, `toAccountId` is null. Amount is stored as a negative number (e.g. `-124.85`).
+**Expense** — money leaves an account to pay for something. `fromAccountId` and `categoryId` are set, and `toAccountId` is null.
 
-**Income** — money arrives into an account. `bankAccountId` is the destination, `categoryId` is set, `toAccountId` is null. Amount is stored as a positive number (e.g. `31303.85`).
+**Income** — money arrives into an account. `fromAccountId` is null, and `toAccountId` and `categoryId` are set.
 
-**Transfer** — money moves between your own accounts with no external party. `bankAccountId` is the source, `toAccountId` is the destination, `categoryId` is null. Amount is stored as a positive number representing how much moved (e.g. `1000` for "Transfer to wallet").
+**Transfer** — money moves between your own accounts with no external party. Different `fromAccountId` and `toAccountId` values are set, and `categoryId` is null.
+
+Amounts are always stored as positive values. Direction comes exclusively from the account endpoints.
 
 ---
 
@@ -293,17 +291,23 @@ user ──< goal                     one user → many goals
 
 category ──< category             one parent category → many child categories (via parentId)
 
-bank_account ──< transaction      one account → many transactions (as source)
-bank_account ──< transaction      one account → many transfers (as destination via toAccountId)
+bank_account ──< transaction      one account → many outgoing transactions (via fromAccountId)
+bank_account ──< transaction      one account → many incoming transactions (via toAccountId)
 category     ──< transaction      one category → many income/expense transactions
 category     ──< budget           one category → many budgets over time
 ```
 
 All foreign keys referencing `user.id` include `ON DELETE CASCADE`. If the user account is deleted, all their data is deleted automatically.
 
-`toAccountId` and `categoryId` on `transaction` are both nullable. The rule is:
-- `type = 'income'` or `'expense'` → `categoryId` must be set, `toAccountId` is null
-- `type = 'transfer'` → `toAccountId` must be set, `categoryId` is null
+`fromAccountId`, `toAccountId`, and `categoryId` on `transaction` are nullable so one record shape can represent every transaction kind. The valid combinations are:
+
+| `fromAccountId` | `toAccountId` | `categoryId` | Derived kind |
+|---|---|---|---|
+| set | null | set | Expense |
+| null | set | set | Income |
+| set | different account | null | Transfer |
+
+Both accounts absent, matching source and destination accounts, a missing category on income or expense, and a category on a transfer are invalid.
 
 ---
 
@@ -345,13 +349,17 @@ const txns = await db
     and(
       eq(transaction.userId, userId),
       gte(transaction.date, '2026-02-01'),
-      lte(transaction.date, '2026-02-28'),
-      ne(transaction.type, 'transfer')   // exclude transfers from P&L
+      lte(transaction.date, '2026-02-28')
     )
   )
 
-const income   = txns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-const expenses = txns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+const income = txns
+  .filter((transaction) => transaction.fromAccountId === null && transaction.toAccountId !== null)
+  .reduce((sum, transaction) => sum + transaction.amount, 0)
+
+const expenses = txns
+  .filter((transaction) => transaction.fromAccountId !== null && transaction.toAccountId === null)
+  .reduce((sum, transaction) => sum + transaction.amount, 0)
 ```
 
 **Recent transactions with category and subcategory name:**
@@ -364,7 +372,8 @@ const txns = await db
     id:             transaction.id,
     description:    transaction.description,
     amount:         transaction.amount,
-    type:           transaction.type,
+    fromAccountId:  transaction.fromAccountId,
+    toAccountId:    transaction.toAccountId,
     date:           transaction.date,
     status:         transaction.status,
     categoryName:   child.name,
@@ -390,12 +399,13 @@ const transfers = await db
     toAccount:   toAccount.name,
   })
   .from(transaction)
-  .leftJoin(bankAccount, eq(transaction.bankAccountId, bankAccount.id))
+  .leftJoin(bankAccount, eq(transaction.fromAccountId, bankAccount.id))
   .leftJoin(toAccount,   eq(transaction.toAccountId, toAccount.id))
   .where(
     and(
       eq(transaction.userId, userId),
-      eq(transaction.type, 'transfer')
+      isNotNull(transaction.fromAccountId),
+      isNotNull(transaction.toAccountId)
     )
   )
 ```
@@ -407,15 +417,16 @@ const budgets = await db
   .from(budget)
   .where(eq(budget.userId, userId))
 
-for (const b of budgets) {
+for (const budget of budgets) {
   const [spent] = await db
     .select({ total: sum(transaction.amount) })
     .from(transaction)
     .where(
       and(
-        eq(transaction.categoryId, b.categoryId),
-        eq(transaction.type, 'expense'),
-        gte(transaction.date, b.startDate)
+        eq(transaction.categoryId, budget.categoryId),
+        isNotNull(transaction.fromAccountId),
+        isNull(transaction.toAccountId),
+        gte(transaction.date, budget.startDate)
       )
     )
 }
@@ -429,7 +440,7 @@ for (const b of budgets) {
 
 **Why store dates as text?** SQLite has no native date type. ISO 8601 strings (`2026-02-06`) sort correctly lexicographically, so `ORDER BY date` and range queries with `>=` and `<=` work without any special handling.
 
-**Why a `type` field instead of deriving it from the amount sign?** With transfers added, the sign alone is ambiguous — a transfer of 1000 THB from bank to wallet is positive on both sides. An explicit `type` enum (`income`, `expense`, `transfer`) makes the intent unambiguous and makes filtering in queries straightforward.
+**Why derive transaction kind from account endpoints?** Source and destination accounts already express money direction without relying on amount signs. Deriving income, expense, or transfer from those endpoints avoids a stored `type` value that could contradict the accounts. It also keeps every amount positive and makes balance effects explicit.
 
 **Why `parentId` on category instead of a separate table?** One level of hierarchy is all you need to match hledger's structure (e.g. `expenses:shopping:clothes` = Shopping → Clothes). A self-referencing `parentId` handles this with no extra joins beyond what you already write. A separate junction table would be over-engineering for this case.
 

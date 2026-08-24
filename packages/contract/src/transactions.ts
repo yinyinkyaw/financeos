@@ -1,10 +1,11 @@
-import { initContract } from "@ts-rest/core";
-import { z } from "zod";
+import { initContract } from '@ts-rest/core';
+import { z } from 'zod';
+import { apiSuccessResponseSchema, commonApiErrorResponses } from './api-response';
 
 const c = initContract();
 
-export const transactionTypeSchema = z.enum(["income", "expense", "transfer"]);
-export const transactionStatusSchema = z.enum(["completed", "pending"]);
+export const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
+export const transactionStatusSchema = z.enum(['completed', 'pending']);
 
 export const transactionSchema = z.object({
   id: z.string(),
@@ -36,30 +37,33 @@ export const createTransactionBodySchema = z.object({
   toAccountId: z.string().optional(), // required when type is 'transfer'
   categoryId: z.string().optional(), // required when type is 'income' or 'expense'
   date: z.string(),
-  status: transactionStatusSchema.default("completed"),
+  status: transactionStatusSchema.default('completed'),
 });
 
-export const transactionContract = c.router({
-  list: {
-    method: "GET",
-    path: "/transactions",
-    query: listTransactionsQuerySchema,
-    responses: {
-      200: z.array(transactionSchema),
-      401: z.object({ message: z.string() }),
+export const transactionContract = c.router(
+  {
+    list: {
+      method: 'GET',
+      path: '/transactions',
+      query: listTransactionsQuerySchema,
+      responses: {
+        200: apiSuccessResponseSchema(200, z.array(transactionSchema)),
+      },
+    },
+    create: {
+      method: 'POST',
+      path: '/transactions',
+      body: createTransactionBodySchema,
+      responses: {
+        201: apiSuccessResponseSchema(201, transactionSchema),
+      },
     },
   },
-  create: {
-    method: "POST",
-    path: "/transactions",
-    body: createTransactionBodySchema,
-    responses: {
-      201: transactionSchema,
-      400: z.object({ message: z.string() }),
-      401: z.object({ message: z.string() }),
-    },
-  },
-});
+  {
+    commonResponses: commonApiErrorResponses,
+    strictStatusCodes: true,
+  }
+);
 
 export type Transaction = z.infer<typeof transactionSchema>;
 export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;

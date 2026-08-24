@@ -1,15 +1,17 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
-import { getServerSession } from "@/lib/server-session";
+import { getQueryClient } from '@/lib/get-query-client';
+import { serverSessionQueryOptions } from '@/actions/server-session';
 
 export default async function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession();
+  const queryClient = getQueryClient();
+  const session = await queryClient.query(serverSessionQueryOptions());
   if (session) {
-    redirect("/");
+    redirect('/');
   }
 
   return children;

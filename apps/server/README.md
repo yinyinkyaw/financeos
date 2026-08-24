@@ -1,11 +1,11 @@
 # FinanceOS Server (`@financeos/server`)
 
-Backend service for FinanceOS, built with Hono + Better Auth + Drizzle ORM.
+Backend service for FinanceOS, built with Express + Better Auth + Drizzle ORM.
 
 ## Stack
 
 - Runtime: Node.js
-- HTTP framework: Hono
+- HTTP framework: Express
 - Auth: better-auth
 - Database: SQLite (via `@libsql/client`)
 - ORM: Drizzle ORM
@@ -16,7 +16,11 @@ Backend service for FinanceOS, built with Hono + Better Auth + Drizzle ORM.
 ```txt
 apps/server
 ├─ src/
-│  ├─ index.ts          # Hono app entry
+│  ├─ index.ts          # Server entry
+│  ├─ app.ts            # Express app composition
+│  ├─ categories/
+│  │  ├─ handler.ts   # HTTP transport and ts-rest handlers
+│  │  └─ service.ts   # Business logic and database access
 │  ├─ lib/
 │  │  └─ auth.ts        # better-auth setup
 │  └─ db/
@@ -68,9 +72,23 @@ Server default URL:
 
 - `http://localhost:3001`
 
-Health check (current route):
+Health check:
 
-- `GET /` -> `Hello Hono!`
+- `GET /health-check` -> `{ "status": 200, "body": "Hello Express!", "message": "Health check successful." }`
+
+## API response envelope
+
+First-party endpoints return a consistent JSON envelope:
+
+```json
+{
+  "status": 200,
+  "body": {},
+  "message": "Request completed successfully."
+}
+```
+
+Error responses use the same `status` and `message` fields, with an optional `body` for validation details. Better Auth routes under `/api/auth/*` retain Better Auth's protocol-specific responses.
 
 ## Build And Start
 
@@ -90,14 +108,14 @@ This app already has:
 To generate migrations, add `apps/server/drizzle.config.ts` if you do not have one yet:
 
 ```ts
-import { defineConfig } from "drizzle-kit";
+import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  schema: "./src/db/schema.ts",
-  out: "./src/db/migrations",
-  dialect: "sqlite",
+  schema: './src/db/schema.ts',
+  out: './src/db/migrations',
+  dialect: 'sqlite',
   dbCredentials: {
-    url: process.env.DB_FILE_NAME ?? "file:./financeos.sqlite3",
+    url: process.env.DB_FILE_NAME ?? 'file:./financeos.sqlite3',
   },
 });
 ```
@@ -114,4 +132,3 @@ pnpm --filter @financeos/server exec drizzle-kit migrate
 - Auth setup lives in `src/lib/auth.ts`
 - It uses `drizzleAdapter(db, { provider: "sqlite" })`
 - Keep `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` set in `.env`
-

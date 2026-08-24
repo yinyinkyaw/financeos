@@ -132,10 +132,9 @@ const c = initContract()
 const transactionSchema = z.object({
   id: z.string(),
   userId: z.string(),
-  bankAccountId: z.string(),
-  toAccountId: z.string().nullable(),   // only populated for transfers
+  fromAccountId: z.string().nullable(), // null for income
+  toAccountId: z.string().nullable(),   // null for expense
   categoryId: z.string().nullable(),    // null for transfers
-  type: z.enum(['income', 'expense', 'transfer']),
   amount: z.number(),
   description: z.string(),
   date: z.string(),
@@ -150,7 +149,7 @@ export const transactionContract = c.router({
     query: z.object({
       limit: z.coerce.number().optional(),
       offset: z.coerce.number().optional(),
-      type: z.enum(['income', 'expense', 'transfer']).optional(),
+      kind: z.enum(['income', 'expense', 'transfer']).optional(),
     }),
     responses: {
       200: z.array(transactionSchema),
@@ -161,12 +160,11 @@ export const transactionContract = c.router({
     method: 'POST',
     path: '/transactions',
     body: z.object({
-      type: z.enum(['income', 'expense', 'transfer']),
       amount: z.number(),
       description: z.string(),
-      bankAccountId: z.string(),
-      toAccountId: z.string().optional(),   // required when type is 'transfer'
-      categoryId: z.string().optional(),    // required when type is 'income' or 'expense'
+      fromAccountId: z.string().nullable(),
+      toAccountId: z.string().nullable(),
+      categoryId: z.string().nullable(),
       date: z.string(),
       status: z.enum(['completed', 'pending']).default('completed'),
     }),
@@ -240,27 +238,27 @@ export const api = initClient(contract, {
 
 **Using the client in a component:**
 ```ts
-// Expense transaction — fully type-safe
+// Expense: source account only, with a category
 const { body } = await api.transactions.create({
   body: {
-    type: 'expense',
-    amount: -124.85,
+    amount: 124.85,
     description: 'Whole Foods Market',
-    bankAccountId: 'bank-id',
+    fromAccountId: 'bank-id',
+    toAccountId: null,
     categoryId: 'groceries-category-id',
     date: '2026-03-21',
     status: 'completed',
   }
 })
 
-// Transfer between accounts — no categoryId needed
+// Transfer: different source and destination accounts, without a category
 const { body } = await api.transactions.create({
   body: {
-    type: 'transfer',
     amount: 1000,
     description: 'Transfer to wallet',
-    bankAccountId: 'bank-id',
+    fromAccountId: 'bank-id',
     toAccountId: 'wallet-id',
+    categoryId: null,
     date: '2026-03-21',
     status: 'completed',
   }
@@ -357,13 +355,21 @@ import { createHonoEndpoints } from '@ts-rest/hono'
 import { transactionContract } from '@financeos/contract'
 import { db } from '../db'
 import { transactions } from '../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 
 export const transactionRouter = createHonoEndpoints(transactionContract, {
   list: async ({ query }, c) => {
     const userId = c.get('userId')
     const conditions = [eq(transactions.userId, userId)]
-    if (query.type) conditions.push(eq(transactions.type, query.type))
+    if (query.kind === 'expense') {
+      conditions.push(isNotNull(transactions.fromAccountId), isNull(transactions.toAccountId))
+    }
+    if (query.kind === 'income') {
+      conditions.push(isNull(transactions.fromAccountId), isNotNull(transactions.toAccountId))
+    }
+    if (query.kind === 'transfer') {
+      conditions.push(isNotNull(transactions.fromAccountId), isNotNull(transactions.toAccountId))
+    }
     const rows = await db.select().from(transactions)
       .where(and(...conditions))
       .limit(query.limit ?? 10)
@@ -373,18 +379,27 @@ export const transactionRouter = createHonoEndpoints(transactionContract, {
   create: async ({ body }, c) => {
     const userId = c.get('userId')
 
-    // Validate business rules the Zod schema cannot catch
-    if (body.type === 'transfer' && !body.toAccountId) {
-      return { status: 400, body: { message: 'toAccountId is required for transfers' } }
+    const hasSourceAccount = body.fromAccountId !== null
+    const hasDestinationAccount = body.toAccountId !== null
+
+    if (!hasSourceAccount && !hasDestinationAccount) {
+      return { status: 400, body: { message: 'A source or destination account is required' } }
     }
-    if (body.type !== 'transfer' && !body.categoryId) {
-      return { status: 400, body: { message: 'categoryId is required for income and expense' } }
+    const isTransfer = hasSourceAccount && hasDestinationAccount
+    if (isTransfer && body.fromAccountId === body.toAccountId) {
+      return { status: 400, body: { message: 'Source and destination accounts must differ' } }
+    }
+    if (isTransfer && body.categoryId) {
+      return { status: 400, body: { message: 'Transfers cannot have a category' } }
+    }
+    if (!isTransfer && !body.categoryId) {
+      return { status: 400, body: { message: 'Category is required' } }
     }
 
-    const tx = await db.insert(transactions)
+    const insertedTransactions = await db.insert(transactions)
       .values({ ...body, userId })
       .returning()
-    return { status: 201, body: tx[0] }
+    return { status: 201, body: insertedTransactions[0] }
   },
 })
 ```

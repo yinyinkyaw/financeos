@@ -163,7 +163,7 @@ If `getSession()` on the client returns null (session expired), your UI should r
 
 ## Flow 4 — Add transaction
 
-This is the most important flow to understand because it touches every layer of the stack. It also handles three distinct transaction types — income, expense, and transfer — each with slightly different validation rules.
+This is the most important flow to understand because it touches every layer of the stack. Income, expense, and transfer are derived from the submitted source and destination accounts rather than stored as an independent type.
 
 ```mermaid
 sequenceDiagram
@@ -190,12 +190,12 @@ sequenceDiagram
   Hono->>TSR: Validate request body against Zod schema in contract
   TSR-->>Hono: parsed and typed payload
 
-  alt type is income or expense
-    Hono->>Hono: Check categoryId is present
+  alt one account endpoint is set
+    Hono->>Hono: Derive income or expense and check categoryId is present
     Hono->>DB: INSERT INTO transaction with categoryId
-  else type is transfer
-    Hono->>Hono: Check toAccountId is present
-    Hono->>DB: INSERT INTO transaction with toAccountId
+  else different source and destination accounts are set
+    Hono->>Hono: Derive transfer and check categoryId is absent
+    Hono->>DB: INSERT INTO transaction with both account endpoints
   end
 
   DB-->>Hono: new transaction row
@@ -207,9 +207,9 @@ sequenceDiagram
 
 **Session is verified on the server, always.** The client calls `getSession()` first only as a convenience check. The server always independently re-verifies the cookie. Never trust the client.
 
-**Zod catches shape errors, business logic catches rule errors.** The Zod schema in the contract validates that `type` is one of the allowed enum values and that `amount` is a number. But it cannot express the rule "if type is transfer, toAccountId must be present" — that cross-field rule lives in your route handler as an explicit check before the Drizzle insert.
+**Zod catches shape errors, business logic catches ledger rule errors.** The Zod schema validates the account fields and amount. The route handler rejects two absent accounts, matching source and destination accounts, a missing category on income or expense, or a category on a transfer.
 
-**Transfers have no category.** When `type = 'transfer'`, `categoryId` is null and `toAccountId` is set. This matches your hledger file where transfers like `Transfer to wallet` and `Withdrawal cash` move money between `assets:*` accounts with no `expenses:*` leg.
+**Account endpoints determine transaction kind.** A source only is an expense, a destination only is income, and both endpoints form a transfer. Transfers have no category. This matches your hledger file where transfers like `Transfer to wallet` and `Withdrawal cash` move money between `assets:*` accounts with no `expenses:*` leg.
 
 **The response returns the full new row** so the UI can update the transaction list immediately without a second fetch.
 
@@ -293,8 +293,10 @@ Every flow can fail at multiple points. Here is what each failure looks like, wh
 | Request with no session cookie | 401 | Session middleware | Redirect to /sign-in |
 | Request with expired session | 401 | Session middleware | Redirect to /sign-in |
 | Invalid request body shape | 400 | ts-rest Zod adapter | Show field-level validation errors |
-| Transfer missing toAccountId | 400 | Route handler business logic | Show "Destination account is required" |
-| Income/expense missing categoryId | 400 | Route handler business logic | Show "Category is required" |
+| Source and destination both missing | 400 | Route handler business logic | Show "Choose an account" |
+| Source and destination are the same | 400 | Route handler business logic | Show "Choose different accounts" |
+| Income or expense missing categoryId | 400 | Route handler business logic | Show "Category is required" |
+| Transfer has categoryId | 400 | Route handler business logic | Show "Transfers cannot have a category" |
 | Database constraint violation | 500 | Drizzle / route handler | Show "Something went wrong" |
 
 A good pattern is a single global error handler on the ts-rest client that intercepts `401` responses and redirects to `/sign-in` automatically, so you do not have to handle it in every component.

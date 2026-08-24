@@ -22,6 +22,20 @@
       "when": 1774835362978,
       "tag": "0002_boring_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787493457550,
+      "tag": "0003_bizarre_stryfe",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787544791288,
+      "tag": "0004_loose_warbird",
+      "breakpoints": true
     }
   ]
 }

@@ -25,11 +25,11 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 
 **Status:** `ready-to-build`
 
-**What to build:** Let an authenticated user create and view their own flat income and expense categories. The category list should come from persistent storage and be reusable by the transaction form.
+**What to build:** Let an authenticated user create and view their own flat categories. Categories are neutral labels reusable by income and expense transactions.
 
 **Blocked by:** Finish the authenticated ledger shell.
 
-- [ ] The user can create a category with a non-empty name and either income or expense type.
+- [ ] The user can create a category with a non-empty name; a category has no income or expense type.
 - [ ] A newly created category persists and appears after reloading the application.
 - [ ] The list contains only categories owned by the authenticated user.
 - [ ] Duplicate or otherwise invalid input produces a useful validation response.
@@ -62,7 +62,9 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 
 - [ ] The transaction form uses the authenticated user's real account and category lists.
 - [ ] The user enters a positive amount; income adds that amount and expense subtracts it when calculating balances.
-- [ ] Income requires an income category, and expense requires an expense category.
+- [ ] Income has no source account and requires a destination account and category.
+- [ ] Expense requires a source account and category and has no destination account.
+- [ ] Transaction kind is derived from the account endpoints and is not stored independently.
 - [ ] The server rejects accounts or categories that do not belong to the authenticated user.
 - [ ] A valid entry persists and appears in the ledger after reloading.
 - [ ] Current account balance is derived from opening balance plus income minus expenses, without mutating a second balance source that can drift.
@@ -80,7 +82,7 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 - [ ] The user can choose different source and destination accounts and enter a positive transfer amount.
 - [ ] The server rejects a transfer whose source and destination are the same.
 - [ ] Both accounts must belong to the authenticated user.
-- [ ] A transfer has no income or expense category.
+- [ ] A transfer has different source and destination accounts and no category.
 - [ ] The source balance decreases and destination balance increases by the same amount.
 - [ ] Transfers are excluded from income and expense totals.
 - [ ] A valid transfer persists as one ledger entry and appears after reloading.
@@ -113,8 +115,8 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 **Blocked by:** Record and list income and expenses; Record account transfers.
 
 - [ ] The user can open one transaction and see its persisted details.
-- [ ] The user can edit the amount, date, description, account, category, and transaction type where valid.
-- [ ] Converting between income, expense, and transfer enforces the destination-account and category rules of the new type.
+- [ ] The user can edit the amount, date, description, source account, destination account, and category where valid.
+- [ ] Converting between income, expense, and transfer changes the account endpoints and enforces the category rules of the resulting transaction kind.
 - [ ] The user can delete a transaction only after an explicit confirmation.
 - [ ] Balances and dashboard totals are correct after every edit, conversion, or deletion.
 - [ ] A user cannot view, edit, or delete another user's transaction.
@@ -129,7 +131,7 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 **Blocked by:** Show the real ledger dashboard; Edit and delete transactions safely.
 
 - [ ] The user can rename and update supported details of an owned account.
-- [ ] The user can rename and update the type of an owned category when the change remains valid for referenced transactions.
+- [ ] The user can rename an owned category.
 - [ ] An unreferenced owned account or category can be deleted after confirmation.
 - [ ] Deletion is rejected when the account or category is referenced by transaction history.
 - [ ] A user cannot view, edit, or delete another user's account or category.

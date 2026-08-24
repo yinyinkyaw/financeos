@@ -1,0 +1,1 @@
+ALTER TABLE `finance_accounts` RENAME COLUMN "amount" TO "balance";

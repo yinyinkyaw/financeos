@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { DashboardShell } from '@/app/components/dashboard/dashboard-shell';
-
-export default function HomePage() {
-  return <DashboardShell />;
+export default function AppPage() {
+  redirect('/dashboard');
 }

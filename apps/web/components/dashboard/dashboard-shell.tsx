@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { AppSidebar, type DashboardPage } from '@/app/components/dashboard/sidebar';
+import { AppSidebar, type DashboardPage } from '@/components/dashboard/sidebar';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { BalanceCard } from './balance-card';
 
 const pages: Record<DashboardPage, { label: string }> = {
   overview: { label: 'Overview' },
@@ -12,7 +11,7 @@ const pages: Record<DashboardPage, { label: string }> = {
   transactions: { label: 'Transactions' },
 };
 
-export function DashboardShell() {
+export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [activePage, setActivePage] = useState<DashboardPage>('overview');
   const currentPage = pages[activePage];
 
@@ -33,9 +32,7 @@ export function DashboardShell() {
           </Breadcrumb>
         </header>
 
-        <div className='flex flex-1 flex-col gap-4 p-4 lg:p-4'>
-          <BalanceCard balance={5_000} />
-        </div>
+        <div className='flex flex-1 flex-col gap-4 p-4 lg:p-4'>{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

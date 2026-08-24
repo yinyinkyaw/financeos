@@ -1,12 +1,16 @@
-import { initContract } from "@ts-rest/core";
-import { transactionContract } from "./transactions";
-import { categoryContract } from "./category";
-import { bankAccountContract } from "./bank_account";
+import { initContract } from '@ts-rest/core';
+import { authContract } from './auth';
+import { transactionContract } from './transactions';
+import { categoryContract } from './category';
+import { financeAccountContract } from './finance-account';
+
+export * from './api-response';
 
 const c = initContract();
 
 export const apiContract = c.router({
+  auth: authContract,
   transactions: transactionContract,
   categories: categoryContract,
-  bankAccounts: bankAccountContract,
+  financeAccounts: financeAccountContract,
 });

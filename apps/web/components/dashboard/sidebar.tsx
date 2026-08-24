@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { ArrowLeftRight, LayoutDashboard, WalletCards } from 'lucide-react';
 
-import { NavUser } from '@/app/components/dashboard/nav-user';
+import { NavUser } from '@/components/dashboard/nav-user';
 import {
   Sidebar,
   SidebarContent,

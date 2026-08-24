@@ -1,17 +1,21 @@
-import { redirect } from "next/navigation";
+import { dehydrate } from '@tanstack/react-query';
+import { redirect } from 'next/navigation';
 
-import { getServerSession } from "@/lib/server-session";
+import Providers from '@/components/providers';
+import { getQueryClient } from '@/lib/get-query-client';
+import { serverSessionQueryOptions } from '@/actions/server-session';
 
 export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession();
+  const queryClient = getQueryClient();
+  const session = await queryClient.query(serverSessionQueryOptions());
 
   if (!session) {
-    redirect("/sign-in");
+    redirect('/sign-in');
   }
 
-  return children;
+  return <Providers dehydratedState={dehydrate(queryClient)}>{children}</Providers>;
 }
