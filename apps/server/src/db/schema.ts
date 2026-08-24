@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { index, integer, real, sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { check, index, integer, sqliteTable, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
@@ -113,6 +113,7 @@ export const categories = sqliteTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     color: text('color'),
+    iconName: text('icon_name').notNull().default('tag'),
     parentId: text('parent_id').references((): AnySQLiteColumn => categories.id, {
       onDelete: 'set null',
     }),
@@ -142,21 +143,32 @@ export const categoryRelations = relations(categories, ({ one, many }) => ({
   }),
 }));
 
-export const financeAccounts = sqliteTable('finance_accounts', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  balance: real('balance').notNull().default(0.0),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  createdAt: integer('created_at', { mode: 'timestamp_ms' })
-    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-    .notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-    .$onUpdate(() => /* @_PURE_ */ new Date())
-    .notNull(),
-});
+export const financeAccounts = sqliteTable(
+  'finance_accounts',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    currency: text('currency', { enum: ['THB'] })
+      .notNull()
+      .default('THB'),
+    openingBalanceSatang: integer('opening_balance_satang').notNull().default(0),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => /* @_PURE_ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('finance_accounts_name_idx').on(table.name),
+    unique('finance_accounts_user_name_unique').on(table.userId, table.name),
+    check('finance_accounts_currency_thb_check', sql`${table.currency} = 'THB'`),
+  ]
+);
 
 export const financeAccountRelations = relations(financeAccounts, ({ one }) => ({
   user: one(user, {
@@ -172,20 +184,14 @@ export const transactions = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    bankAccountId: text('bank_account_id').notNull(),
-    toAccountId: text('to_account_id'),
-    categoryId: text('category_id'),
-    type: text('type', {
-      enum: ['income', 'expense', 'transfer'],
-    }).notNull(),
-    amount: real('amount').notNull(),
-    description: text('description').notNull(),
-    date: text('date').notNull(),
-    status: text('status', {
-      enum: ['completed', 'pending'],
-    })
-      .default('completed')
-      .notNull(),
+    sourceAccountId: text('source_account_id').references(() => financeAccounts.id, { onDelete: 'no action' }),
+    destinationAccountId: text('destination_account_id').references(() => financeAccounts.id, {
+      onDelete: 'no action',
+    }),
+    categoryId: text('category_id').references(() => categories.id, { onDelete: 'no action' }),
+    amountSatang: integer('amount_satang').notNull(),
+    note: text('note').notNull(),
+    transactionDate: text('transaction_date').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -195,9 +201,26 @@ export const transactions = sqliteTable(
       .notNull(),
   },
   (table) => [
-    index('transactions_userId_idx').on(table.userId),
-    index('transactions_bankAccountId_idx').on(table.bankAccountId),
-    index('transactions_date_idx').on(table.date),
+    index('transactions_user_id_idx').on(table.userId),
+    index('transactions_source_account_id_idx').on(table.sourceAccountId),
+    index('transactions_destination_account_id_idx').on(table.destinationAccountId),
+    index('transactions_category_id_idx').on(table.categoryId),
+    index('transactions_recent_idx').on(table.userId, table.transactionDate, table.createdAt, table.id),
+    check('transactions_positive_amount_check', sql`${table.amountSatang} > 0`),
+    check('transactions_nonempty_note_check', sql`length(trim(${table.note})) > 0`),
+    check(
+      'transactions_valid_endpoints_check',
+      sql`(
+        (${table.sourceAccountId} is not null and ${table.destinationAccountId} is null and ${table.categoryId} is not null)
+        or (${table.sourceAccountId} is null and ${table.destinationAccountId} is not null and ${table.categoryId} is not null)
+        or (
+          ${table.sourceAccountId} is not null
+          and ${table.destinationAccountId} is not null
+          and ${table.sourceAccountId} <> ${table.destinationAccountId}
+          and ${table.categoryId} is null
+        )
+      )`
+    ),
   ]
 );
 
@@ -205,5 +228,19 @@ export const transactionRelations = relations(transactions, ({ one }) => ({
   user: one(user, {
     fields: [transactions.userId],
     references: [user.id],
+  }),
+  sourceAccount: one(financeAccounts, {
+    fields: [transactions.sourceAccountId],
+    references: [financeAccounts.id],
+    relationName: 'transaction_source_account',
+  }),
+  destinationAccount: one(financeAccounts, {
+    fields: [transactions.destinationAccountId],
+    references: [financeAccounts.id],
+    relationName: 'transaction_destination_account',
+  }),
+  category: one(categories, {
+    fields: [transactions.categoryId],
+    references: [categories.id],
   }),
 }));

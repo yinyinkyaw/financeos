@@ -1,43 +1,47 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { apiSuccessResponseSchema, commonApiErrorResponses } from './api-response';
+import { categoryIconNameSchema } from './category';
 
 const c = initContract();
 
-export const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
-export const transactionStatusSchema = z.enum(['completed', 'pending']);
+export const transactionKindSchema = z.enum(['income', 'expense', 'transfer']);
+
+const financialAccountReferenceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+const transactionCategorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  iconName: categoryIconNameSchema,
+});
 
 export const transactionSchema = z.object({
   id: z.string(),
-  userId: z.string(),
-  bankAccountId: z.string(),
-  toAccountId: z.string().nullable(), // only popualated for transfers
-  categoryId: z.string().nullable(), // null for transfers
-  type: transactionTypeSchema,
-  amount: z.number(),
-  description: z.string(),
-  date: z.string(),
-  status: transactionStatusSchema,
+  kind: transactionKindSchema,
+  amountSatang: z.number().int().positive(),
+  note: z.string().trim().min(1),
+  transactionDate: z.iso.date(),
   createdAt: z.string(),
+  sourceAccount: financialAccountReferenceSchema.nullable(),
+  destinationAccount: financialAccountReferenceSchema.nullable(),
+  category: transactionCategorySchema.nullable(),
 });
 
 export const listTransactionsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
-  offset: z.coerce.number().int().nonnegative().optional(),
-  type: transactionTypeSchema.optional(),
-  bankAccountId: z.string().optional(),
-  status: transactionStatusSchema.optional(),
+  accountId: z.string().optional(),
 });
 
 export const createTransactionBodySchema = z.object({
-  type: transactionTypeSchema,
-  amount: z.number().positive(),
-  description: z.string().min(1),
-  bankAccountId: z.string(),
-  toAccountId: z.string().optional(), // required when type is 'transfer'
-  categoryId: z.string().optional(), // required when type is 'income' or 'expense'
-  date: z.string(),
-  status: transactionStatusSchema.default('completed'),
+  amountSatang: z.number().int().positive(),
+  note: z.string().trim().min(1),
+  transactionDate: z.iso.date(),
+  sourceAccountId: z.string().nullable(),
+  destinationAccountId: z.string().nullable(),
+  categoryId: z.string().nullable(),
 });
 
 export const transactionContract = c.router(

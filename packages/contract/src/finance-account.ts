@@ -1,13 +1,15 @@
 import { initContract, type ServerInferRequest } from '@ts-rest/core';
 import { z } from 'zod';
-import { apiSuccessResponseSchema, commonApiErrorResponses } from './api-response';
+import { apiErrorResponseSchema, apiSuccessResponseSchema, commonApiErrorResponses } from './api-response';
 
 const c = initContract();
 
-const financeAccountSchema = z.object({
+export const financialAccountSummarySchema = z.object({
   id: z.string(),
-  name: z.string(),
-  balance: z.number(),
+  name: z.string().trim().min(1),
+  currency: z.literal('THB'),
+  openingBalanceSatang: z.number().int(),
+  currentBalanceSatang: z.number().int(),
 });
 
 export const financeAccountContract = c.router(
@@ -16,18 +18,19 @@ export const financeAccountContract = c.router(
       method: 'GET',
       path: '/finance-accounts',
       responses: {
-        200: apiSuccessResponseSchema(200, z.array(financeAccountSchema)),
+        200: apiSuccessResponseSchema(200, z.array(financialAccountSummarySchema)),
       },
     },
     create: {
       method: 'POST',
       path: '/finance-accounts',
       body: z.object({
-        name: z.string(),
-        balance: z.number(),
+        name: z.string().trim().min(1).max(100),
+        openingBalanceSatang: z.number().int().default(0),
       }),
       responses: {
-        200: apiSuccessResponseSchema(200, financeAccountSchema),
+        200: apiSuccessResponseSchema(200, financialAccountSummarySchema),
+        409: apiErrorResponseSchema(409),
       },
     },
   },
@@ -37,4 +40,4 @@ export const financeAccountContract = c.router(
   }
 );
 
-export type FinanceAccountRequestSchema = ServerInferRequest<typeof financeAccountContract.create>['body'];
+export type CreateFinancialAccountBody = ServerInferRequest<typeof financeAccountContract.create>['body'];

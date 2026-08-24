@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowLeftRight, LayoutDashboard, WalletCards } from 'lucide-react';
+import { ArrowLeftRight, LayoutDashboard } from 'lucide-react';
+import Link from 'next/link';
 
 import { NavUser } from '@/components/dashboard/nav-user';
 import {
@@ -20,33 +21,24 @@ import {
 } from '@/components/ui/sidebar';
 import NavLogo from './nav-logo';
 
-export type DashboardPage = 'overview' | 'wallets' | 'transactions';
+export type DashboardPage = 'overview' | 'transactions';
 
 const navigationItems = [
-  { page: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { page: 'wallets', label: 'Wallets', icon: WalletCards },
-  { page: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { page: 'overview', label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
+  { page: 'transactions', label: 'Transactions', icon: ArrowLeftRight, href: '/transactions' },
 ] as const satisfies ReadonlyArray<{
   page: DashboardPage;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  href: string;
 }>;
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   activePage: DashboardPage;
-  onPageChange: (page: DashboardPage) => void;
 }
 
-export function AppSidebar({ activePage, onPageChange, ...props }: AppSidebarProps) {
+export function AppSidebar({ activePage, ...props }: AppSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar();
-
-  function selectPage(page: DashboardPage) {
-    onPageChange(page);
-
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-  }
 
   return (
     <Sidebar collapsible='icon' {...props}>
@@ -65,11 +57,14 @@ export function AppSidebar({ activePage, onPageChange, ...props }: AppSidebarPro
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.page}>
                   <SidebarMenuButton
+                    render={<Link href={item.href} />}
                     isActive={activePage === item.page}
                     tooltip={item.label}
                     className='h-10 transition-[background-color,color,transform] duration-150 active:scale-[0.96]'
                     aria-current={activePage === item.page ? 'page' : undefined}
-                    onClick={() => selectPage(item.page)}
+                    onClick={() => {
+                      if (isMobile) setOpenMobile(false);
+                    }}
                   >
                     <item.icon />
                     <span>{item.label}</span>

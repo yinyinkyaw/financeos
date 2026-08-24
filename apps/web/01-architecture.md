@@ -1,5 +1,7 @@
 # Architecture Documentation
 
+> **Historical reference:** This document predates the approved core-ledger flow. Where it conflicts with [`docs/product/user-flow.md`](../../docs/product/user-flow.md) or [the focused Overview spec](../../.scratch/dashboard-overview/spec.md), those newer documents are authoritative.
+
 **Project:** FinanceOS
 **Author:** Solo developer
 **Stack:** Next.js · Hono · ts-rest · better-auth · Drizzle ORM · SQLite · Turborepo + pnpm
@@ -136,7 +138,7 @@ const transactionSchema = z.object({
   toAccountId: z.string().nullable(),   // null for expense
   categoryId: z.string().nullable(),    // null for transfers
   amount: z.number(),
-  description: z.string(),
+  note: z.string(),
   date: z.string(),
   status: z.enum(['completed', 'pending']),
   createdAt: z.string(),
@@ -161,7 +163,7 @@ export const transactionContract = c.router({
     path: '/transactions',
     body: z.object({
       amount: z.number(),
-      description: z.string(),
+      note: z.string(),
       fromAccountId: z.string().nullable(),
       toAccountId: z.string().nullable(),
       categoryId: z.string().nullable(),
@@ -242,7 +244,7 @@ export const api = initClient(contract, {
 const { body } = await api.transactions.create({
   body: {
     amount: 124.85,
-    description: 'Whole Foods Market',
+    note: 'Whole Foods Market',
     fromAccountId: 'bank-id',
     toAccountId: null,
     categoryId: 'groceries-category-id',
@@ -255,7 +257,7 @@ const { body } = await api.transactions.create({
 const { body } = await api.transactions.create({
   body: {
     amount: 1000,
-    description: 'Transfer to wallet',
+    note: 'Transfer to wallet',
     fromAccountId: 'bank-id',
     toAccountId: 'wallet-id',
     categoryId: null,

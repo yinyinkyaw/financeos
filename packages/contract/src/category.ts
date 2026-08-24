@@ -4,15 +4,30 @@ import { apiSuccessResponseSchema, commonApiErrorResponses } from './api-respons
 
 const c = initContract();
 
+export const categoryIconNameSchema = z.enum([
+  'tag',
+  'circle-dollar-sign',
+  'utensils',
+  'bus',
+  'shopping-bag',
+  'receipt-text',
+  'house',
+  'heart-pulse',
+  'shapes',
+]);
+export type CategoryIconName = z.infer<typeof categoryIconNameSchema>;
+
 const categorySchema = z.object({
   id: z.string(),
   name: z.string(),
   color: z.string().nullable(),
+  iconName: categoryIconNameSchema,
   parent: z
     .object({
       id: z.string(),
       name: z.string(),
       color: z.string().nullable(),
+      iconName: categoryIconNameSchema,
     })
     .nullable(), // null = top-level category, set = child category
 });
@@ -26,30 +41,6 @@ export const categoryContract = c.router(
       path: '/categories',
       responses: {
         200: apiSuccessResponseSchema(200, z.array(categorySchema)),
-      },
-    },
-    create: {
-      method: 'POST',
-      path: '/categories',
-      body: z.object({
-        name: z.string(),
-        color: z.string().optional(),
-        parentId: z.string().nullable(),
-      }),
-      responses: {
-        200: apiSuccessResponseSchema(200, categorySchema),
-      },
-    },
-    update: {
-      method: 'PUT',
-      path: '/categories/:id',
-      body: z.object({
-        name: z.string(),
-        color: z.string().optional(),
-        parentId: z.string().nullable(),
-      }),
-      responses: {
-        200: apiSuccessResponseSchema(200, categorySchema),
       },
     },
   },

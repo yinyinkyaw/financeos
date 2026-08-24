@@ -37,7 +37,7 @@ An opening balance establishes the initial position of a financial account. It i
 
 The derived balance of a financial account:
 
-> opening balance + completed income - completed expenses + incoming transfers - outgoing transfers
+> opening balance + income - expenses + incoming transfers - outgoing transfers
 
 Current balance is never maintained as a second independently editable value.
 
@@ -97,14 +97,13 @@ Initial account setup explains why a financial account is required:
 
 The form contains:
 
-- **Account name:** required; for example, "Kasikorn Bank" or "Daily Cash."
-- **Account type:** required; checking, savings, wallet, or cash.
+- **Account name:** required and unique in combination with the owning user; for example, "Kasikorn Bank" or "Daily Cash."
 - **Starting balance:** optional numeric amount; defaults to ฿0.
 - **Currency:** THB, displayed as fixed information rather than an editable choice.
 
 The primary action is **Create account and continue**.
 
-Creating the first financial account must persist it for the authenticated user. Before any completed ledger entries exist, its current balance equals its opening balance.
+Creating the first financial account must persist it for the authenticated user. Before any ledger entries exist, its current balance equals its opening balance.
 
 ### 4. Make the ledger immediately usable
 
@@ -138,14 +137,14 @@ The transaction form collects:
 1. Positive amount.
 2. The source account for an expense, or the destination account for income.
 3. Category.
-4. Description.
-5. Date.
+4. Transaction note.
+5. Transaction date.
 
 The entry experience may ask whether the user is recording income, an expense, or a transfer to reveal the appropriate account fields. That choice only controls the form; FinanceOS derives the persisted transaction kind from the submitted account endpoints.
 
 When only one financial account exists, the interface may preselect it for convenience without storing a default-account preference.
 
-A completed income increases the selected account's current balance. A completed expense decreases it. The persisted transaction appears in the ledger and remains visible after reload.
+An income increases the selected account's current balance. An expense decreases it. The persisted transaction appears in the ledger and remains visible after reload.
 
 ### Transfer
 
@@ -164,11 +163,11 @@ An authenticated user with at least one financial account opens the overview dir
 
 The overview shows:
 
-- Total current balance across all financial accounts.
-- Current balance for each financial account.
-- Completed income and expense totals that exclude transfers and opening balances.
-- Recent income, expense, and transfer entries in deterministic recent-first order.
-- Clear actions to add a transaction or financial account.
+- Total current balance across all financial accounts by default.
+- An optional financial-account selector that changes the balance and history to that account's view.
+- A clear action to add a transaction with the selected account prefilled where appropriate.
+- The latest 10 relevant income, expense, and transfer entries in deterministic recent-first order.
+- A path from recent history to the full transaction list that preserves the optional account filter.
 
 Empty, loading, and failure states must be truthful. FinanceOS must not display fabricated balances or sample transactions as if they belong to the user.
 
@@ -180,7 +179,7 @@ The primary navigation is:
 - Accounts
 - Transactions
 
-Use **Accounts**, not **Wallets**, because checking and savings accounts are also supported. Category management is secondary and may live in settings or within the transaction experience rather than occupying primary navigation.
+Use **Accounts**, not **Wallets**, because a financial account can represent any place the user keeps money. Category management is secondary and may live in settings or within the transaction experience rather than occupying primary navigation.
 
 ## User Stories
 
@@ -189,33 +188,36 @@ Use **Accounts**, not **Wallets**, because checking and savings accounts are als
 3. As a user whose financial-account state is still loading, I want a stable loading experience, so that incorrect screens do not flash briefly.
 4. As a user, I want a retryable error when readiness cannot be determined, so that a server failure is not mistaken for having no accounts.
 5. As a new user, I want to name my first financial account, so that I can recognize where my money is held.
-6. As a new user, I want to classify my financial account, so that checking, savings, wallet, and cash accounts are represented accurately.
-7. As a new user, I want the starting balance to be optional, so that I can begin with a zero balance when I do not know the exact amount.
-8. As a THB user, I want the setup currency fixed to THB, so that I am not asked to configure an unsupported choice.
-9. As a user, I want my opening balance excluded from income, so that financial reports do not treat existing money as newly earned money.
-10. As a new user, I want starter categories created automatically, so that I can record a transaction immediately.
-11. As a user returning to an interrupted setup, I want starter-category creation to be safe to repeat, so that duplicates are not introduced.
-12. As a user who completed setup, I want to add my first transaction, add another account, or inspect the overview, so that I can choose the next useful action.
-13. As a user with one financial account, I want it preselected during transaction entry, so that the form requires less repetitive input.
-14. As a user, I want income and expenses to update the selected account's balance, so that the overview reflects completed ledger activity.
-15. As a user, I want to add multiple financial accounts, so that FinanceOS represents all the places where I keep money.
-16. As a user with multiple financial accounts, I want to transfer money between them, so that internal movements do not appear as spending or earnings.
-17. As a user with fewer than two financial accounts, I want transfer entry withheld, so that I cannot enter an invalid transfer.
-18. As a user, I want current balances to be derived from opening balances and completed ledger entries, so that displayed totals cannot drift from transaction history.
-19. As a user, I want the overview to show only my persisted financial data, so that I can trust the application.
-20. As a user, I want accountless financial routes to return me to setup, so that I cannot become trapped in a broken application state.
-21. As a user, I want to create custom categories after onboarding, so that the ledger can reflect my personal finances without slowing initial setup.
-22. As a signed-out visitor, I want private financial screens and APIs protected, so that my ledger remains private.
+6. As a new user, I want the starting balance to be optional, so that I can begin with a zero balance when I do not know the exact amount.
+7. As a THB user, I want the setup currency fixed to THB, so that I am not asked to configure an unsupported choice.
+8. As a user, I want my opening balance excluded from income, so that financial reports do not treat existing money as newly earned money.
+9. As a new user, I want starter categories created automatically, so that I can record a transaction immediately.
+10. As a user returning to an interrupted setup, I want starter-category creation to be safe to repeat, so that duplicates are not introduced.
+11. As a user who completed setup, I want to add my first transaction, add another account, or inspect the overview, so that I can choose the next useful action.
+12. As a user with one financial account, I want it preselected during transaction entry, so that the form requires less repetitive input.
+13. As a user, I want income and expenses to update the selected account's balance, so that the overview reflects ledger activity.
+14. As a user, I want to add multiple financial accounts, so that FinanceOS represents all the places where I keep money.
+15. As a user with multiple financial accounts, I want to transfer money between them, so that internal movements do not appear as spending or earnings.
+16. As a user with fewer than two financial accounts, I want transfer entry withheld, so that I cannot enter an invalid transfer.
+17. As a user, I want current balances to be derived from opening balances and ledger entries, so that displayed totals cannot drift from transaction history.
+18. As a user, I want the overview to show only my persisted financial data, so that I can trust the application.
+19. As a user, I want accountless financial routes to return me to setup, so that I cannot become trapped in a broken application state.
+20. As a user, I want to create custom categories after onboarding, so that the ledger can reflect my personal finances without slowing initial setup.
+21. As a signed-out visitor, I want private financial screens and APIs protected, so that my ledger remains private.
 
 ## Implementation Decisions
 
 - Authentication establishes a session but does not own financial-account readiness rules.
 - Ledger onboarding performs the financial-account readiness check after authentication.
 - A financial account is required before the user can record ledger entries or use account-dependent features.
+- Financial-account names have a composite uniqueness constraint with the owning user: `(user_id, name)`.
 - The first financial account has no special main-account or default-account flag.
 - Opening balance is optional and defaults to zero.
 - THB is the only exposed currency in this phase.
-- Current balance is derived from opening balance and completed ledger entries rather than stored as a separately mutable value.
+- Financial accounts have no persisted classification or type.
+- Current balance is derived from opening balance and ledger entries rather than stored as a separately mutable value.
+- Every persisted transaction is immediately part of the ledger; Phase 1 has no transaction status.
+- Every transaction requires a transaction note and transaction date.
 - Starter-category provisioning is idempotent.
 - Account, category, transaction, and readiness responses are scoped to the authenticated owner.
 - Transfers become available only when the user has at least two financial accounts.
@@ -231,10 +233,11 @@ Focused contract and server behavior tests should cover:
 - Authentication and ownership enforcement.
 - Readiness behavior for zero, one, and multiple financial accounts.
 - Required account fields and the zero opening-balance default.
+- Composite `(user_id, name)` financial-account uniqueness.
 - Idempotent starter-category provisioning.
 - Income, expense, and transfer validation.
-- Derived account balances and aggregate overview totals.
-- Exclusion of opening balances and transfers from income and expense totals.
+- Derived account balances and account-filtered overview behavior.
+- Exclusion of opening balances from ledger-entry calculations and zero net effect of transfers across all accounts.
 - Deterministic recent-first transaction ordering.
 
 Tests should assert externally observable behavior rather than internal function structure. The repository has no established onboarding integration suite to reuse, so the first delivery must establish a repeatable high-level seam instead of scattering assertions across implementation details.

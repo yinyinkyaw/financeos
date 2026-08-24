@@ -1,23 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { AppSidebar, type DashboardPage } from '@/components/dashboard/sidebar';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 const pages: Record<DashboardPage, { label: string }> = {
   overview: { label: 'Overview' },
-  wallets: { label: 'Wallets' },
   transactions: { label: 'Transactions' },
 };
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const [activePage, setActivePage] = useState<DashboardPage>('overview');
+  const pathname = usePathname();
+  const activePage: DashboardPage = pathname.startsWith('/transactions') ? 'transactions' : 'overview';
   const currentPage = pages[activePage];
 
   return (
     <SidebarProvider>
-      <AppSidebar activePage={activePage} onPageChange={setActivePage} />
+      <AppSidebar activePage={activePage} />
       <SidebarInset>
         <header className='sticky top-0 z-10 flex h-14 shrink-0 items-center border-b bg-background px-3 md:h-16 md:px-4'>
           <SidebarTrigger className='md:hidden' />

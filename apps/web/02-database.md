@@ -1,5 +1,7 @@
 # Database Documentation
 
+> **Historical reference:** This document predates the approved core-ledger flow. Where it conflicts with [`docs/product/user-flow.md`](../../docs/product/user-flow.md) or [the focused Overview spec](../../.scratch/dashboard-overview/spec.md), those newer documents are authoritative.
+
 **Project:** FinanceOS
 **Database:** SQLite
 **ORM:** Drizzle ORM
@@ -29,7 +31,7 @@ SQLite uses loose typing. Where Postgres would use `uuid`, `timestamp`, or `nume
 
 | Table | Purpose |
 |---|---|
-| `bank_account` | Checking, savings, wallet, and cash accounts |
+| `bank_account` | Named places where the user keeps money |
 | `category` | Hierarchical transaction categories (parent + child) |
 | `transaction` | Income, expense, and transfer transactions |
 | `budget` | Monthly or weekly spending limits per category |
@@ -123,9 +125,6 @@ export const bankAccount = sqliteTable('bank_account', {
   userId: text('userId').notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  type: text('type', {
-    enum: ['checking', 'savings', 'wallet', 'cash']
-  }).notNull(),
   balance: real('balance').notNull().default(0),
   currency: text('currency').notNull().default('THB'),
   createdAt: text('createdAt').notNull()
@@ -136,7 +135,7 @@ export type BankAccount = typeof bankAccount.$inferSelect
 export type NewBankAccount = typeof bankAccount.$inferInsert
 ```
 
-Based on your hledger file, you have three accounts to seed: `assets:bank` (checking), `assets:wallet` (wallet), and `assets:cash` (cash). The `type` enum now includes `wallet` and `cash` to match your real accounts.
+Based on your hledger file, you have three named accounts to seed: `assets:bank`, `assets:wallet`, and `assets:cash`. Their names identify where money is held; FinanceOS does not persist a separate account classification.
 
 ---
 
@@ -200,7 +199,7 @@ export const transaction = sqliteTable('transaction', {
   categoryId: text('categoryId')
     .references(() => category.id),      // null for transfers
   amount: real('amount').notNull(),
-  description: text('description').notNull(),
+  note: text('note').notNull(),
   date: text('date').notNull(),
   status: text('status', {
     enum: ['completed', 'pending']
@@ -370,7 +369,7 @@ const child  = aliasedTable(category, 'child')
 const txns = await db
   .select({
     id:             transaction.id,
-    description:    transaction.description,
+    note:           transaction.note,
     amount:         transaction.amount,
     fromAccountId:  transaction.fromAccountId,
     toAccountId:    transaction.toAccountId,
@@ -392,7 +391,7 @@ const txns = await db
 const transfers = await db
   .select({
     id:          transaction.id,
-    description: transaction.description,
+    note:        transaction.note,
     amount:      transaction.amount,
     date:        transaction.date,
     fromAccount: bankAccount.name,

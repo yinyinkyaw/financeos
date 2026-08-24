@@ -40,11 +40,12 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 
 **Status:** `ready-to-build`
 
-**What to build:** Let an authenticated user create and view checking, savings, wallet, and cash accounts. Each account starts with a THB opening balance and exposes a current balance that later ledger entries can affect.
+**What to build:** Let an authenticated user create and view named financial accounts. Each account starts with a THB opening balance and exposes a current balance that later ledger entries can affect.
 
 **Blocked by:** Finish the authenticated ledger shell.
 
-- [ ] The user can create an account with a name, supported account type, and numeric opening balance.
+- [ ] The user can create an account with a name and numeric opening balance; no account classification is required.
+- [ ] The `(user_id, name)` combination is unique; an exact duplicate for the same user returns a useful conflict response.
 - [ ] THB is the only exposed currency for this phase.
 - [ ] A newly created account persists and appears after reloading the application.
 - [ ] The account list contains only accounts owned by the authenticated user.
@@ -56,7 +57,7 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 
 **Status:** `ready-to-build`
 
-**What to build:** Let the user record completed income and expense entries against their real accounts and categories, then view the persisted entries in the ledger with correct account balances.
+**What to build:** Let the user record income and expense entries against their real accounts and categories, then view the persisted entries in the ledger with correct account balances.
 
 **Blocked by:** Create and list categories; Create and list financial accounts.
 
@@ -90,19 +91,20 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 
 ## Show the real ledger dashboard
 
-**Status:** `ready-to-build`
+**Status:** `complete`
 
-**What to build:** Replace the dashboard's sample financial data with the authenticated user's real ledger, giving them a trustworthy summary of their accounts and completed entries.
+**What to build:** Replace the dashboard's sample financial data with an account-filtered view of the authenticated user's real ledger. The focused specification is `.scratch/dashboard-overview/spec.md`.
 
 **Blocked by:** Record and list income and expenses; Record account transfers.
 
-- [ ] Total balance equals the sum of all derived account balances.
-- [ ] Income and expense totals use real entries and exclude transfers.
-- [ ] The account summary displays each real account and its current balance.
-- [ ] Recent transactions display real income, expenses, and transfers in recent-first order.
-- [ ] Empty, loading, and failure states are understandable and do not show fabricated financial data.
-- [ ] Controls for unsupported filters, exports, or actions are removed, hidden, or clearly disabled.
-- [ ] An integration check demonstrates account creation, category creation, income, expense, transfer, and the resulting dashboard totals.
+- [x] All accounts displays the sum of every server-derived current balance.
+- [x] Selecting an owned account updates the URL, balance, recent history, and transaction-form preselection.
+- [x] Recent history displays at most 10 relevant income, expense, and transfer entries in deterministic transaction-date-first order.
+- [x] The Add transaction dialog/sheet creates endpoint-derived income, expenses, and transfers with required notes.
+- [x] View all preserves the optional account filter when opening the full transaction list.
+- [x] Empty, loading, and failure states are understandable and do not show fabricated financial data.
+- [x] Controls for unsupported filters, exports, or actions are removed, hidden, or clearly disabled.
+- [x] An integration check demonstrates account creation, category creation, income, expense, transfer, account filtering, and resulting balances.
 
 ## Phase 2 — Complete CRUD
 
@@ -115,7 +117,7 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 **Blocked by:** Record and list income and expenses; Record account transfers.
 
 - [ ] The user can open one transaction and see its persisted details.
-- [ ] The user can edit the amount, date, description, source account, destination account, and category where valid.
+- [ ] The user can edit the amount, transaction date, transaction note, source account, destination account, and category where valid.
 - [ ] Converting between income, expense, and transfer changes the account endpoints and enforces the category rules of the resulting transaction kind.
 - [ ] The user can delete a transaction only after an explicit confirmation.
 - [ ] Balances and dashboard totals are correct after every edit, conversion, or deletion.

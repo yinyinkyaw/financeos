@@ -7,6 +7,7 @@ import { registerFinanceAccountRoutes } from './finance-accounts/handler';
 import { createApiSuccessResponse } from './lib/api-response';
 import { handleApiError, handleRouteNotFound } from './middleware/api-errors';
 import { registerSessionRoutes } from './session/handler';
+import { registerTransactionRoutes } from './transactions/handler';
 
 const { FRONTEND_URL } = getServerEnv();
 
@@ -30,6 +31,7 @@ export const createApp = () => {
   registerSessionRoutes(apiRouter);
   registerCategoryRoutes(apiRouter);
   registerFinanceAccountRoutes(apiRouter);
+  registerTransactionRoutes(apiRouter);
   app.use('/api', apiRouter);
   app.use(handleRouteNotFound);
   app.use(handleApiError);

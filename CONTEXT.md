@@ -11,6 +11,14 @@ _Avoid_: Wallet when referring to every supported account
 **Transaction**:
 A ledger record describing money entering, leaving, or moving between financial accounts.
 
+**Transaction note**:
+Required user-entered text that identifies or adds context to a transaction.
+_Avoid_: Description
+
+**Transaction date**:
+The calendar date on which the user records that a transaction occurred.
+_Avoid_: Date when the meaning could be ambiguous
+
 **Source account**:
 The financial account money leaves. It is absent for income.
 _Avoid_: From account in product copy
@@ -39,4 +47,4 @@ A user-owned label describing the purpose of an income or expense. A category is
 The financial account's balance when the user begins tracking it in FinanceOS. It establishes an initial position and is not income.
 
 **Current balance**:
-The balance derived from an account's opening balance and its completed incoming and outgoing transactions.
+The balance derived from an account's opening balance and its incoming and outgoing transactions.

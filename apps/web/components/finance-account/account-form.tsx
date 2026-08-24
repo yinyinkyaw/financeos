@@ -14,7 +14,7 @@ import { tsr } from '@/lib/tsr';
 
 const financeAccountSchema = z.object({
   name: z.string().trim().min(1, 'Enter an account name.').max(100, 'Account name must be 100 characters or fewer.'),
-  balance: z.number().finite('Enter a valid starting balance.'),
+  openingBalanceBaht: z.number().finite('Enter a valid starting balance.'),
 });
 
 const FORM_ID = 'finance-account-form';
@@ -25,7 +25,7 @@ export function FinanceAccountForm() {
   const form = useForm({
     defaultValues: {
       name: '',
-      balance: 0,
+      openingBalanceBaht: 0,
     },
     validators: {
       onSubmit: financeAccountSchema,
@@ -33,7 +33,12 @@ export function FinanceAccountForm() {
     onSubmit: async ({ value }) => {
       try {
         const account = financeAccountSchema.parse(value);
-        const response = await createAccountMutation.mutateAsync({ body: account });
+        const response = await createAccountMutation.mutateAsync({
+          body: {
+            name: account.name,
+            openingBalanceSatang: Math.round(account.openingBalanceBaht * 100),
+          },
+        });
 
         if (response.status !== 200) {
           toast.error(response.body.message);
@@ -88,7 +93,7 @@ export function FinanceAccountForm() {
                 );
               }}
             </form.Field>
-            <form.Field name='balance'>
+            <form.Field name='openingBalanceBaht'>
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -104,11 +109,11 @@ export function FinanceAccountForm() {
                       onChange={(event) => field.handleChange(event.target.valueAsNumber)}
                       aria-invalid={isInvalid}
                       inputMode='decimal'
-                      step='any'
+                      step='0.01'
                       required
                     />
                     <FieldDescription>
-                      Enter the account&apos;s current balance. Use a negative value for debt.
+                      Enter the account&apos;s opening balance in THB. Use a negative value for debt.
                     </FieldDescription>
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
