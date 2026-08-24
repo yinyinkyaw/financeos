@@ -15,6 +15,7 @@ import type { ReactNode } from 'react';
 
 import { CategoryIcon } from '@/components/dashboard/category-icon';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatBaht } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 const TRANSACTION_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
@@ -22,14 +23,6 @@ const TRANSACTION_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   year: 'numeric',
   timeZone: 'Asia/Bangkok',
-});
-
-const THAI_BAHT_FORMATTER = new Intl.NumberFormat('en-TH', {
-  style: 'currency',
-  currency: 'THB',
-  currencyDisplay: 'code',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
 });
 
 const TRANSACTION_KIND_PRESENTATION = {
@@ -40,10 +33,6 @@ const TRANSACTION_KIND_PRESENTATION = {
 
 function formatTransactionDate(transactionDate: string) {
   return TRANSACTION_DATE_FORMATTER.format(new Date(`${transactionDate}T00:00:00+07:00`));
-}
-
-function formatTransactionAmount(amountSatang: number) {
-  return THAI_BAHT_FORMATTER.format(amountSatang / 100);
 }
 
 function TransactionKind({ kind }: { kind: Transaction['kind'] }) {
@@ -135,7 +124,7 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
                 {transaction.destinationAccount?.name ?? <span className='text-muted-foreground'>—</span>}
               </TableCell>
               <TableCell className='pr-4 text-right font-mono font-medium tabular-nums'>
-                {formatTransactionAmount(transaction.amountSatang)}
+                {formatBaht(transaction.amountSatang)}
               </TableCell>
             </TableRow>
           ))

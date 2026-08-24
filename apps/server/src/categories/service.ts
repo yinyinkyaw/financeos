@@ -19,16 +19,10 @@ function toCategoryReference(category: CategoryReferenceSource) {
 export async function getCategories({ user }: { user: AuthUser }) {
   const ownedCategories = await db.query.categories.findMany({
     where: eq(categories.userId, user.id),
-    with: {
-      parent: true,
-    },
     orderBy: [asc(categories.name)],
   });
 
-  return ownedCategories.map((category) => ({
-    ...toCategoryReference(category),
-    parent: category.parent?.userId === user.id ? toCategoryReference(category.parent) : null,
-  }));
+  return ownedCategories.map(toCategoryReference);
 }
 
 export async function createCategory({ user, body }: { user: AuthUser; body: CreateCategoryBody }) {
@@ -52,5 +46,5 @@ export async function createCategory({ user, body }: { user: AuthUser; body: Cre
       iconName: categories.iconName,
     });
 
-  return createdCategory ? { ...toCategoryReference(createdCategory), parent: null } : null;
+  return createdCategory ? toCategoryReference(createdCategory) : null;
 }

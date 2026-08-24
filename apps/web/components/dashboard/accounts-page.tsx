@@ -8,16 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FinanceAccountDialog } from '@/components/finance-account/account-form';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatBaht } from '@/lib/money';
 import { tsr } from '@/lib/tsr';
 import { cn } from '@/lib/utils';
-
-const THAI_BAHT_FORMATTER = new Intl.NumberFormat('en-TH', {
-  style: 'currency',
-  currency: 'THB',
-  currencyDisplay: 'narrowSymbol',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 const ACCOUNT_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
@@ -25,10 +18,6 @@ const ACCOUNT_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
   timeZone: 'Asia/Bangkok',
 });
-
-function formatBalance(balanceSatang: number) {
-  return THAI_BAHT_FORMATTER.format(balanceSatang / 100);
-}
 
 function formatAccountDate(createdAt: string) {
   return ACCOUNT_DATE_FORMATTER.format(new Date(createdAt));
@@ -60,7 +49,7 @@ function AccountCard({ account }: { account: FinancialAccountSummary }) {
               account.currentBalanceSatang < 0 && 'text-negative'
             )}
           >
-            {formatBalance(account.currentBalanceSatang)}
+            {formatBaht(account.currentBalanceSatang)}
           </p>
         </div>
         <div className='flex items-center justify-between gap-3 border-t pt-4 text-xs text-muted-foreground'>

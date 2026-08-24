@@ -33,8 +33,14 @@ const DIALOG_FORM_ID = 'finance-account-dialog-form';
 
 function useFinanceAccountForm(onAccountCreated: () => void) {
   const queryClient = useQueryClient();
-  const createAccountMutation = tsr.financeAccounts.create.useMutation({});
-  const form = useForm({
+  const createAccountMutation = tsr.financeAccounts.create.useMutation({
+    onSuccess: async (response) => {
+      if (response.status === 200) {
+        await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
+      }
+    },
+  });
+  return useForm({
     defaultValues: {
       name: '',
       openingBalanceBaht: 0,
@@ -58,15 +64,12 @@ function useFinanceAccountForm(onAccountCreated: () => void) {
         }
 
         toast.success(response.body.message);
-        await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
         onAccountCreated();
       } catch {
         toast.error('Could not create the account. Please try again.');
       }
     },
   });
-
-  return form;
 }
 
 type FinanceAccountFormApi = ReturnType<typeof useFinanceAccountForm>;
@@ -118,7 +121,7 @@ function FinanceAccountFields({ form }: { form: FinanceAccountFormApi }) {
                 required
               />
               <FieldDescription>
-                Enter the account&apos;s opening balance in THB. Use a negative value for debt.
+                Enter the account&apos;s opening balance in ฿. Use a negative value for debt.
               </FieldDescription>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>

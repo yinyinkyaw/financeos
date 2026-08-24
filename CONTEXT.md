@@ -41,7 +41,11 @@ A transaction with one source account and no destination account.
 A transaction with different source and destination accounts.
 
 **Category**:
-A user-owned label describing the purpose of an income or expense. A category is not restricted to a transaction kind, and transfers do not have categories.
+A user-owned, flat label describing the purpose of an income or expense. A category is not restricted to a transaction kind, cannot contain another category, and is never assigned to a transfer.
+
+**Annual category expense summary**:
+A ledger-derived view of expense amounts for every user-owned category during one calendar year, divided into January through December. Income and transfers are excluded, categories without expenses remain present with zero amounts, and the annual amount is the sum of the twelve monthly amounts.
+_Avoid_: Category summary, when referring to this expense-only view
 
 **Opening balance**:
 The financial account's balance when the user begins tracking it in FinanceOS. It establishes an initial position and is not income.

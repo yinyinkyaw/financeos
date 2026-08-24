@@ -182,6 +182,7 @@ export function TransactionDialog({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['finance-accounts'] }),
         queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['category-expense-summaries'] }),
       ]);
       setOpen(false);
       resetForm();
@@ -230,7 +231,11 @@ export function TransactionDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {transactionKindOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value} disabled={option.value === 'transfer' && accounts.length < 2}>
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      disabled={option.value === 'transfer' && accounts.length < 2}
+                    >
                       {option.label}
                     </SelectItem>
                   ))}
@@ -242,7 +247,7 @@ export function TransactionDialog({
               <>
                 <div className='grid gap-5 sm:grid-cols-2'>
                   <Field>
-                    <FieldLabel htmlFor='transaction-amount'>Amount (THB)</FieldLabel>
+                    <FieldLabel htmlFor='transaction-amount'>Amount (฿)</FieldLabel>
                     <Input
                       id='transaction-amount'
                       type='number'

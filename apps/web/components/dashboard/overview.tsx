@@ -12,16 +12,10 @@ import { TransactionDialog } from '@/components/dashboard/transaction-dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatBaht } from '@/lib/money';
 import { tsr } from '@/lib/tsr';
 import { cn } from '@/lib/utils';
 
-const THAI_BAHT_FORMATTER = new Intl.NumberFormat('en-TH', {
-  style: 'currency',
-  currency: 'THB',
-  currencyDisplay: 'narrowSymbol',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 const TRANSACTION_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
@@ -81,7 +75,7 @@ export function TransactionRows({
             <div className='text-right'>
               <p className={cn('font-mono text-sm font-medium tabular-nums', amount.tone)}>
                 {amount.sign}
-                {THAI_BAHT_FORMATTER.format(transaction.amountSatang / 100)}
+                {formatBaht(transaction.amountSatang)}
               </p>
               <time className='text-xs text-muted-foreground sm:hidden'>
                 {formatTransactionDate(transaction.transactionDate)}

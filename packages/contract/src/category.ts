@@ -22,14 +22,6 @@ const categorySchema = z.object({
   name: z.string(),
   color: z.string().nullable(),
   iconName: categoryIconNameSchema,
-  parent: z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      color: z.string().nullable(),
-      iconName: categoryIconNameSchema,
-    })
-    .nullable(), // null = top-level category, set = child category
 });
 
 export type Category = z.infer<typeof categorySchema>;

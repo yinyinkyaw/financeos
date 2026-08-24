@@ -1,13 +1,24 @@
 'use client';
 
-import { GalleryVerticalEnd } from 'lucide-react';
-
-import { authClient } from '@/lib/auth-client';
+import { BrandMark } from '@/components/brand-mark';
 import { Button } from '@/components/ui/button';
 import { Field, FieldGroup } from '@/components/ui/field';
+import { authClient } from '@/lib/auth-client';
+import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from '@/lib/brand';
 import { toast } from 'sonner';
 
-export default function Signin() {
+async function handleGoogleSignIn() {
+  const { error } = await authClient.signIn.social({
+    provider: 'google',
+    callbackURL: window.location.origin,
+  });
+
+  if (error) {
+    toast.error(error.statusText || 'Unable to sign in with Google.');
+  }
+}
+
+export default function SignInPage() {
   return (
     <div className='flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10'>
       <div className='w-full max-w-sm'>
@@ -18,30 +29,15 @@ export default function Signin() {
 }
 
 function LoginForm() {
-  const googleSignIn = async () => {
-    const { error } = await authClient.signIn.social({
-      provider: 'google',
-      callbackURL: window.location.origin,
-    });
-
-    if (error) {
-      toast.error(error.statusText);
-    }
-  };
-
   return (
     <FieldGroup>
       <div className='flex flex-col items-center gap-2 text-center'>
-        <a href='#' className='flex flex-col items-center gap-2 font-medium'>
-          <div className='flex size-8 items-center justify-center rounded-md'>
-            <GalleryVerticalEnd className='size-6' />
-          </div>
-          <span className='sr-only'>Finance OS</span>
-        </a>
-        <h1 className='text-xl font-bold'>Welcome to Finance OS.</h1>
+        <BrandMark className='mb-2 size-12 rounded-2xl text-xl' />
+        <h1 className='text-balance text-2xl font-bold tracking-tight'>Welcome to {PRODUCT_NAME}</h1>
+        <p className='text-pretty text-sm text-muted-foreground'>{PRODUCT_DESCRIPTION}</p>
       </div>
       <Field>
-        <Button variant='outline' type='button' onClick={googleSignIn}>
+        <Button variant='outline' type='button' className='active:scale-[0.96]' onClick={handleGoogleSignIn}>
           <svg
             width='800px'
             height='800px'
@@ -66,7 +62,7 @@ function LoginForm() {
               fill='#EB4335'
             />
           </svg>
-          Login with Google
+          Continue with Google
         </Button>
       </Field>
     </FieldGroup>

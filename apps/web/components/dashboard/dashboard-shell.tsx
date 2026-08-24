@@ -8,6 +8,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 const pages: Record<DashboardPage, { label: string }> = {
   overview: { label: 'Overview' },
   accounts: { label: 'Accounts' },
+  'category-expenses': { label: 'Category Expense' },
   transactions: { label: 'Transaction History' },
 };
 
@@ -15,15 +16,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const activePage: DashboardPage = pathname.startsWith('/accounts')
     ? 'accounts'
-    : pathname.startsWith('/transactions')
-      ? 'transactions'
-      : 'overview';
+    : pathname.startsWith('/category-expenses')
+      ? 'category-expenses'
+      : pathname.startsWith('/transactions')
+        ? 'transactions'
+        : 'overview';
   const currentPage = pages[activePage];
 
   return (
     <SidebarProvider>
       <AppSidebar activePage={activePage} />
-      <SidebarInset>
+      <SidebarInset className='min-w-0'>
         <header className='sticky top-0 z-10 flex h-14 shrink-0 items-center border-b bg-background px-3 md:h-16 md:px-4'>
           <SidebarTrigger className='md:hidden' />
           <Breadcrumb className='hidden md:block'>

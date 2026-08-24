@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { check, index, integer, sqliteTable, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { check, index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
 export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
@@ -114,9 +114,6 @@ export const categories = sqliteTable(
     name: text('name').notNull(),
     color: text('color'),
     iconName: text('icon_name').notNull().default('tag'),
-    parentId: text('parent_id').references((): AnySQLiteColumn => categories.id, {
-      onDelete: 'set null',
-    }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -128,18 +125,10 @@ export const categories = sqliteTable(
   (table) => [index('categories_userId_idx').on(table.userId)]
 );
 
-export const categoryRelations = relations(categories, ({ one, many }) => ({
+export const categoryRelations = relations(categories, ({ one }) => ({
   user: one(user, {
     fields: [categories.userId],
     references: [user.id],
-  }),
-  parent: one(categories, {
-    fields: [categories.parentId],
-    references: [categories.id],
-    relationName: 'category_parent',
-  }),
-  children: many(categories, {
-    relationName: 'category_parent',
   }),
 }));
 

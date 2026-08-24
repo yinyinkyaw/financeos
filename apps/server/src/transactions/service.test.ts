@@ -53,7 +53,6 @@ before(async () => {
       name text NOT NULL,
       color text,
       icon_name text DEFAULT 'tag' NOT NULL,
-      parent_id text,
       created_at integer NOT NULL,
       updated_at integer NOT NULL
     )`,
@@ -329,6 +328,10 @@ describe('ledger services', () => {
         method: 'POST',
         body: JSON.stringify({ name: 'HTTP Category' }),
       });
+      const salaryCategoryResponse = await request('/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Salary', iconName: 'circle-dollar-sign' }),
+      });
       const savings = (await savingsResponse.json()).body;
       const wallet = (await walletResponse.json()).body;
       const category = (await categoryResponse.json()).body;
@@ -372,12 +375,22 @@ describe('ledger services', () => {
       const filteredList = (
         await (await request(`/transactions?limit=10&accountId=${encodeURIComponent(savings.id)}`)).json()
       ).body;
+      const categoryExpenseSummaryResponse = await request('/category-expense-summaries?year=2026');
+      const categoryExpenseSummaryBody = (await categoryExpenseSummaryResponse.json()).body;
+      const defaultCategoryExpenseSummaryResponse = await request('/category-expense-summaries');
+      const defaultCategoryExpenseSummaryBody = (await defaultCategoryExpenseSummaryResponse.json()).body;
 
       assert.deepEqual(
         {
           unauthorizedStatus,
-          setupStatuses: [savingsResponse.status, walletResponse.status, categoryResponse.status],
+          setupStatuses: [
+            savingsResponse.status,
+            walletResponse.status,
+            categoryResponse.status,
+            salaryCategoryResponse.status,
+          ],
           creationStatuses,
+          createdCategoryFields: Object.keys(category).sort(),
           balances: accountList
             .filter(({ id }: { id: string }) => id === savings.id || id === wallet.id)
             .map(({ name, currentBalanceSatang }: { name: string; currentBalanceSatang: number }) => ({
@@ -385,16 +398,63 @@ describe('ledger services', () => {
               currentBalanceSatang,
             })),
           filteredNotes: filteredList.map(({ note }: { note: string }) => note).sort(),
+          categoryExpenseSummary:
+            categoryExpenseSummaryResponse.status === 200
+              ? {
+                  year: categoryExpenseSummaryBody.year,
+                  categories: categoryExpenseSummaryBody.categories.map(
+                    ({ category: summaryCategory, months }: { category: { name: string }; months: unknown[] }) => ({
+                      name: summaryCategory.name,
+                      monthCount: months.length,
+                      monthRange: [
+                        (months as Array<{ month: string }>)[0]?.month,
+                        (months as Array<{ month: string }>)[11]?.month,
+                      ],
+                      augustExpenseSatang: (months as Array<{ month: string; expenseSatang: number }>).find(
+                        ({ month }) => month === '2026-08'
+                      )?.expenseSatang,
+                    })
+                  ),
+                }
+              : { status: categoryExpenseSummaryResponse.status },
+          defaultCategoryExpenseYear: defaultCategoryExpenseSummaryBody.year,
         },
         {
           unauthorizedStatus: 401,
-          setupStatuses: [200, 200, 200],
+          setupStatuses: [200, 200, 200, 200],
           creationStatuses: [201, 201, 201],
+          createdCategoryFields: ['color', 'iconName', 'id', 'name'],
           balances: [
             { name: 'HTTP Savings', currentBalanceSatang: 500 },
             { name: 'HTTP Wallet', currentBalanceSatang: 300 },
           ],
           filteredNotes: ['HTTP expense', 'HTTP income', 'HTTP transfer'],
+          categoryExpenseSummary: {
+            year: 2026,
+            categories: [
+              {
+                name: 'Food',
+                monthCount: 12,
+                monthRange: ['2026-01', '2026-12'],
+                augustExpenseSatang: 2_000,
+              },
+              {
+                name: 'HTTP Category',
+                monthCount: 12,
+                monthRange: ['2026-01', '2026-12'],
+                augustExpenseSatang: 200,
+              },
+              {
+                name: 'Salary',
+                monthCount: 12,
+                monthRange: ['2026-01', '2026-12'],
+                augustExpenseSatang: 0,
+              },
+            ],
+          },
+          defaultCategoryExpenseYear: Number(
+            new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone: 'Asia/Bangkok' }).format(new Date())
+          ),
         }
       );
     } finally {

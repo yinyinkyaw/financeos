@@ -1,159 +1,133 @@
-# Turborepo starter
+# FinanceOS
 
-This Turborepo starter is maintained by the Turborepo core team.
+FinanceOS is an authenticated personal-finance ledger. It records income, expenses, and transfers across a user’s financial accounts, then derives account balances and expense views from the ledger.
 
-## Using this example
+The ledger is the source of truth for financial activity. Money is stored as integer Thai satang values, and the web application displays amounts with the `฿` symbol.
 
-Run the following command:
+## Features
 
-```sh
-npx create-turbo@latest
+- Google-authenticated access to a private ledger
+- User-owned financial accounts with THB opening balances and derived current balances
+- Flat, reusable categories with validated Lucide icon names
+- Income, expense, and account-transfer transactions
+- Account-filtered dashboard and recent transaction history
+- Annual category expense reporting at `/category-expenses`
+
+### Annual category expenses
+
+The **Category Expense** page is a read-only view covering January through December of the resolved calendar year. It shows every category owned by the authenticated user, including categories with no expenses, with a monthly amount and a UI-derived annual total.
+
+Only expenses contribute to the report. Income and transfers are excluded. The page keeps the category column visible while the month columns can scroll horizontally on narrow screens. It does not expose a year filter.
+
+The authenticated API endpoint is:
+
+```http
+GET /api/category-expense-summaries?year=2026
 ```
 
-## What's inside?
+The `year` query parameter is optional. When omitted, the server resolves the current calendar year in `Asia/Bangkok`. The response contains the resolved year and twelve ordered monthly buckets (`YYYY-01` through `YYYY-12`) for each category. Amounts are non-negative integer satang values; annual totals and currency are derived or presented by the client.
 
-This Turborepo includes the following packages/apps:
+## Repository layout
 
-### Apps and Packages
-
-- `@financeos/web`: the Next.js application, including its local shadcn component registry
-- `@financeos/server`: the backend service
-- `@financeos/contract`: shared API contracts
-- `@financeos/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@financeos/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```text
+apps/
+  server/   Express API, Better Auth, Drizzle ORM, and SQLite
+  web/      Next.js application
+packages/
+  contract/ Shared ts-rest and Zod API contracts
+  eslint-config/
+  typescript-config/
+docs/       Product flows and architecture decisions
 ```
 
-Without global `turbo`, use your package manager:
+The shared domain vocabulary is documented in [`CONTEXT.md`](./CONTEXT.md). The integer-satang storage decision is recorded in [`docs/adr/0001-store-thb-as-integer-satang.md`](./docs/adr/0001-store-thb-as-integer-satang.md).
+
+## Prerequisites
+
+- Node.js 20 or newer
+- pnpm 9
+
+Install dependencies from the repository root:
 
 ```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+pnpm install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Local environment
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Create `apps/server/.env` with the server settings required by Better Auth and SQLite:
+
+```env
+BETTER_AUTH_SECRET=replace-with-a-local-secret
+BETTER_AUTH_URL=http://localhost:3001
+DB_FILE_NAME=file:./financeos.sqlite3
+FRONTEND_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+Create `apps/web/.env.local`:
+
+```env
+NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+```
+
+Configure the Google OAuth client to use the local Better Auth callback URL required by the authentication setup before testing Google sign-in.
+
+## Development
+
+Run the web application and API together:
 
 ```sh
-turbo build --filter=docs
+pnpm dev
 ```
 
-Without global `turbo`:
+The default local URLs are:
+
+- Web: [http://localhost:3000](http://localhost:3000)
+- API: [http://localhost:3001](http://localhost:3001)
+- Health check: `GET http://localhost:3001/health-check`
+
+Useful workspace commands:
 
 ```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+pnpm build
+pnpm lint
+pnpm check-types
+pnpm test
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Server-specific commands:
 
 ```sh
-cd my-turborepo
-turbo dev
+pnpm --filter @financeos/server db:migrate
+pnpm --filter @financeos/server db:seed
+pnpm --filter @financeos/server test
 ```
 
-Without global `turbo`, use your package manager:
+## API conventions
+
+First-party API responses use a common envelope with `status`, `body`, and `message` fields. Authenticated ledger endpoints include session, category, financial-account, transaction, and category-expense-summary routes under `/api`.
+
+Transaction kind is derived from account endpoints rather than stored independently:
+
+| Kind     | Source account | Destination account    | Category |
+| -------- | -------------- | ---------------------- | -------- |
+| Expense  | Required       | Absent                 | Required |
+| Income   | Absent         | Required               | Required |
+| Transfer | Required       | Required and different | Absent   |
+
+Transaction amounts are positive at the API boundary. Account direction determines whether an amount increases or decreases a derived balance. Creating a transaction invalidates cached annual category expense summaries so the report reflects the confirmed ledger.
+
+## Verification
+
+Run the full checks before submitting changes:
 
 ```sh
-cd my-turborepo
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+pnpm lint
+pnpm check-types
+pnpm test
+pnpm build
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+More detailed setup and implementation notes are available in [`apps/server/README.md`](./apps/server/README.md) and [`docs/product/user-flow.md`](./docs/product/user-flow.md).

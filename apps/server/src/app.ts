@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import { registerAuthRoutes } from '@/auth';
 import { getServerEnv } from '../env';
+import { registerCategoryExpenseSummaryRoutes } from './category-expense-summaries/handler';
 import { registerCategoryRoutes } from './categories/handler';
 import { registerFinanceAccountRoutes } from './finance-accounts/handler';
 import { createApiSuccessResponse } from './lib/api-response';
@@ -29,6 +30,7 @@ export const createApp = () => {
 
   const apiRouter = express.Router();
   registerSessionRoutes(apiRouter);
+  registerCategoryExpenseSummaryRoutes(apiRouter);
   registerCategoryRoutes(apiRouter);
   registerFinanceAccountRoutes(apiRouter);
   registerTransactionRoutes(apiRouter);

@@ -9,7 +9,7 @@ function getValidationIssues(error: { issues?: unknown } | null) {
 
 export function handleRequestValidationError(
   error: RequestValidationError,
-  _request: Request,
+  _request: unknown,
   response: Response,
   _next: NextFunction
 ) {

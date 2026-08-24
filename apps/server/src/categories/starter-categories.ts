@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { categories } from '@/db/schema';
 import type { CategoryIconName } from '@financeos/contract/src/category';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 const STARTER_CATEGORIES = [
   { name: 'Income', iconName: 'circle-dollar-sign' },
@@ -20,7 +20,7 @@ function createStarterCategoryId(userId: string, categoryName: string): string {
 
 export async function seedStarterCategories(userId: string): Promise<number> {
   const existingCategories = await db.query.categories.findMany({
-    where: and(eq(categories.userId, userId), isNull(categories.parentId)),
+    where: eq(categories.userId, userId),
     columns: { name: true },
   });
   const existingNames = new Set(existingCategories.map(({ name }) => name));
