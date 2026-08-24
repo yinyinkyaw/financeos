@@ -1,6 +1,6 @@
 'use client';
 
-import type { CreateTransactionBody, Transaction } from '@financeos/contract/src/transactions';
+import type { CreateTransactionBody, Transaction } from '@financeos/contract';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftRight, Loader2, Plus } from 'lucide-react';
 import { useReducer, useRef, useState } from 'react';

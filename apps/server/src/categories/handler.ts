@@ -1,6 +1,6 @@
 import { tsRest } from '@/lib/ts-rest';
 import { requireSession } from '@/middleware/require-session';
-import { categoryContract } from '@financeos/contract/src/category';
+import { categoryContract } from '@financeos/contract';
 import { createExpressEndpoints } from '@ts-rest/express';
 import type { IRouter } from 'express';
 import { createCategory, getCategories } from './service';

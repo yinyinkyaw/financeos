@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { categories } from '@/db/schema';
 import type { AuthUser } from '@/lib/auth';
-import { categoryIconNameSchema, type CreateCategoryBody } from '@financeos/contract/src/category';
+import { categoryIconNameSchema, type CreateCategoryBody } from '@financeos/contract';
 import { and, asc, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 

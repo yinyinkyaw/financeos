@@ -12,7 +12,7 @@ process.env.DB_FILE_NAME = `file:${join(testDirectory, 'ledger.sqlite3')}`;
 
 const { db } = await import('@/db');
 const { categories, financeAccounts, session: sessions, transactions, user } = await import('@/db/schema');
-const { categoryContract } = await import('@financeos/contract/src/category');
+const { categoryContract } = await import('@financeos/contract');
 const { seedStarterCategories } = await import('@/categories/starter-categories');
 const { createCategory, getCategories } = await import('@/categories/service');
 const { createFinanceAccount, getFinanceAccounts } = await import('@/finance-accounts/service');

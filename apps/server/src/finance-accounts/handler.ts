@@ -1,6 +1,6 @@
 import { tsRest } from '@/lib/ts-rest';
 import { requireSession } from '@/middleware/require-session';
-import { financeAccountContract } from '@financeos/contract/src/finance-account';
+import { financeAccountContract } from '@financeos/contract';
 import { createExpressEndpoints } from '@ts-rest/express';
 import type { IRouter } from 'express';
 import { createFinanceAccount, getFinanceAccounts } from './service';

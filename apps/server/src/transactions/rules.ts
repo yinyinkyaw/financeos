@@ -1,4 +1,4 @@
-import type { CreateTransactionBody } from '@financeos/contract/src/transactions';
+import type { CreateTransactionBody } from '@financeos/contract';
 
 type TransactionEndpoints = Pick<CreateTransactionBody, 'sourceAccountId' | 'destinationAccountId' | 'categoryId'>;
 

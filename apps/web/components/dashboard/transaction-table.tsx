@@ -1,4 +1,4 @@
-import type { Transaction } from '@financeos/contract/src/transactions';
+import type { Transaction } from '@financeos/contract';
 import {
   ArrowDownLeft,
   ArrowLeftRight,

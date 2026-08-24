@@ -1,6 +1,6 @@
 'use client';
 
-import type { Transaction } from '@financeos/contract/src/transactions';
+import type { Transaction } from '@financeos/contract';
 import { AlertCircle, ArrowLeftRight, Plus, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';

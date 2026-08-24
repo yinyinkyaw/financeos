@@ -1,11 +1,8 @@
 import { db } from '@/db';
 import { categories, transactions } from '@/db/schema';
 import type { AuthUser } from '@/lib/auth';
-import { categoryIconNameSchema } from '@financeos/contract/src/category';
-import type {
-  AnnualCategoryExpenseSummary,
-  CategoryExpenseMonth,
-} from '@financeos/contract/src/category-expense-summary';
+import { categoryIconNameSchema } from '@financeos/contract';
+import type { AnnualCategoryExpenseSummary, CategoryExpenseMonth } from '@financeos/contract';
 import { and, asc, eq, gte, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 
 const MONTH_COUNT = 12;

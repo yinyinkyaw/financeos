@@ -1,4 +1,4 @@
-import { authContract } from '@financeos/contract/src/auth';
+import { authContract } from '@financeos/contract';
 import { createExpressEndpoints } from '@ts-rest/express';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { IRouter } from 'express';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { FinancialAccountSummary } from '@financeos/contract/src/finance-account';
+import type { FinancialAccountSummary } from '@financeos/contract';
 import { AlertCircle, ArrowUpRight, Landmark, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 

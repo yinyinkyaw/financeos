@@ -1,8 +1,8 @@
 import { db } from '@/db';
 import { categories, financeAccounts, transactions } from '@/db/schema';
 import type { AuthUser } from '@/lib/auth';
-import { categoryIconNameSchema } from '@financeos/contract/src/category';
-import type { CreateTransactionBody, ListTransactionsQuery, Transaction } from '@financeos/contract/src/transactions';
+import { categoryIconNameSchema } from '@financeos/contract';
+import type { CreateTransactionBody, ListTransactionsQuery, Transaction } from '@financeos/contract';
 import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { randomUUID } from 'node:crypto';

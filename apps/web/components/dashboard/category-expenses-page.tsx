@@ -1,6 +1,6 @@
 'use client';
 
-import type { AnnualCategoryExpenseSummary } from '@financeos/contract/src/category-expense-summary';
+import type { AnnualCategoryExpenseSummary } from '@financeos/contract';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 import { CategoryIcon } from '@/components/dashboard/category-icon';

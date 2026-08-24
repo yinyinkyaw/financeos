@@ -11,7 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import type { CategoryIconName } from '@financeos/contract/src/category';
+import type { CategoryIconName } from '@financeos/contract';
 
 const CATEGORY_ICONS: Record<CategoryIconName, LucideIcon> = {
   tag: Tag,

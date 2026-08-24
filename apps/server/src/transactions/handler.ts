@@ -2,7 +2,7 @@ import { createApiErrorBody, createApiSuccessResponse } from '@/lib/api-response
 import { tsRest } from '@/lib/ts-rest';
 import { handleRequestValidationError } from '@/middleware/api-errors';
 import { requireSession } from '@/middleware/require-session';
-import { transactionContract } from '@financeos/contract/src/transactions';
+import { transactionContract } from '@financeos/contract';
 import { createExpressEndpoints } from '@ts-rest/express';
 import type { IRouter } from 'express';
 

@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { financeAccounts, transactions } from '@/db/schema';
 import type { AuthUser } from '@/lib/auth';
-import type { CreateFinancialAccountBody } from '@financeos/contract/src/finance-account';
+import type { CreateFinancialAccountBody } from '@financeos/contract';
 import { and, asc, eq, or, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 

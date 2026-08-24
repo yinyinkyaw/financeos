@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { categories } from '@/db/schema';
-import type { CategoryIconName } from '@financeos/contract/src/category';
+import type { CategoryIconName } from '@financeos/contract';
 import { and, eq } from 'drizzle-orm';
 
 const STARTER_CATEGORIES = [
