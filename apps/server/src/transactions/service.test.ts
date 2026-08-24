@@ -3,6 +3,7 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHmac } from 'node:crypto';
 
 import type { AuthUser } from '@/lib/auth';
 
@@ -10,9 +11,10 @@ const testDirectory = await mkdtemp(join(tmpdir(), 'financeos-ledger-test-'));
 process.env.DB_FILE_NAME = `file:${join(testDirectory, 'ledger.sqlite3')}`;
 
 const { db } = await import('@/db');
-const { categories, financeAccounts, transactions, user } = await import('@/db/schema');
+const { categories, financeAccounts, session: sessions, transactions, user } = await import('@/db/schema');
+const { categoryContract } = await import('@financeos/contract/src/category');
 const { seedStarterCategories } = await import('@/categories/starter-categories');
-const { getCategories } = await import('@/categories/service');
+const { createCategory, getCategories } = await import('@/categories/service');
 const { createFinanceAccount, getFinanceAccounts } = await import('@/finance-accounts/service');
 const { createTransaction, listTransactions } = await import('./service');
 
@@ -55,6 +57,16 @@ before(async () => {
       created_at integer NOT NULL,
       updated_at integer NOT NULL
     )`,
+    `CREATE TABLE session (
+      id text PRIMARY KEY NOT NULL,
+      expires_at integer NOT NULL,
+      token text NOT NULL UNIQUE,
+      created_at integer NOT NULL,
+      updated_at integer NOT NULL,
+      ip_address text,
+      user_agent text,
+      user_id text NOT NULL REFERENCES user(id)
+    )`,
     `CREATE TABLE finance_accounts (
       id text PRIMARY KEY NOT NULL,
       name text NOT NULL,
@@ -88,6 +100,7 @@ beforeEach(async () => {
   await db.delete(transactions);
   await db.delete(categories);
   await db.delete(financeAccounts);
+  await db.delete(sessions);
   await db.delete(user);
 
   await db.insert(user).values([primaryUser, otherUser]);
@@ -189,6 +202,19 @@ describe('ledger services', () => {
     assert.deepEqual({ firstName: first?.name, duplicate }, { firstName: 'Cash', duplicate: null });
   });
 
+  it('creates categories with a validated fallback icon and rejects duplicates', async () => {
+    const created = await createCategory({
+      user: primaryUser,
+      body: categoryContract.create.body.parse({ name: 'Travel' }),
+    });
+    const duplicate = await createCategory({ user: primaryUser, body: { name: 'Travel', iconName: 'bus' } });
+
+    assert.deepEqual(
+      { created: created && { name: created.name, iconName: created.iconName }, duplicate },
+      { created: { name: 'Travel', iconName: 'tag' }, duplicate: null }
+    );
+  });
+
   it('runs the account, category, income, expense, transfer, filter, and balance scenario', async () => {
     const savings = await createFinanceAccount({
       user: primaryUser,
@@ -258,5 +284,123 @@ describe('ledger services', () => {
         ],
       }
     );
+  });
+
+  it('runs the authenticated HTTP contract through SQLite', async () => {
+    const sessionToken = 'authenticated-http-session';
+    const sessionDate = new Date('2026-08-24T00:00:00.000Z');
+    await db.insert(sessions).values({
+      id: 'http-session',
+      token: sessionToken,
+      userId: primaryUser.id,
+      expiresAt: new Date('2026-08-25T00:00:00.000Z'),
+      createdAt: sessionDate,
+      updatedAt: sessionDate,
+    });
+
+    const secret = process.env.BETTER_AUTH_SECRET;
+    if (!secret) throw new Error('BETTER_AUTH_SECRET is required for the authenticated integration test.');
+    const signature = createHmac('sha256', secret).update(sessionToken).digest('base64');
+    const cookie = `better-auth.session_token=${encodeURIComponent(`${sessionToken}.${signature}`)}`;
+    const { createApp } = await import('@/app');
+    const server = createApp().listen(0);
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Integration server did not bind to a TCP port.');
+    const baseUrl = `http://127.0.0.1:${address.port}/api`;
+
+    async function request(path: string, init?: RequestInit) {
+      return fetch(`${baseUrl}${path}`, {
+        ...init,
+        headers: { cookie, 'content-type': 'application/json', ...init?.headers },
+      });
+    }
+
+    try {
+      const unauthorizedStatus = await fetch(`${baseUrl}/finance-accounts`).then(({ status }) => status);
+      const savingsResponse = await request('/finance-accounts', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'HTTP Savings', openingBalanceSatang: 0 }),
+      });
+      const walletResponse = await request('/finance-accounts', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'HTTP Wallet', openingBalanceSatang: 0 }),
+      });
+      const categoryResponse = await request('/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'HTTP Category' }),
+      });
+      const savings = (await savingsResponse.json()).body;
+      const wallet = (await walletResponse.json()).body;
+      const category = (await categoryResponse.json()).body;
+
+      const creationStatuses = await Promise.all([
+        request('/transactions', {
+          method: 'POST',
+          body: JSON.stringify({
+            amountSatang: 1_000,
+            note: 'HTTP income',
+            transactionDate: '2026-08-24',
+            sourceAccountId: null,
+            destinationAccountId: savings.id,
+            categoryId: category.id,
+          }),
+        }).then(({ status }) => status),
+        request('/transactions', {
+          method: 'POST',
+          body: JSON.stringify({
+            amountSatang: 200,
+            note: 'HTTP expense',
+            transactionDate: '2026-08-24',
+            sourceAccountId: savings.id,
+            destinationAccountId: null,
+            categoryId: category.id,
+          }),
+        }).then(({ status }) => status),
+        request('/transactions', {
+          method: 'POST',
+          body: JSON.stringify({
+            amountSatang: 300,
+            note: 'HTTP transfer',
+            transactionDate: '2026-08-24',
+            sourceAccountId: savings.id,
+            destinationAccountId: wallet.id,
+            categoryId: null,
+          }),
+        }).then(({ status }) => status),
+      ]);
+      const accountList = (await (await request('/finance-accounts')).json()).body;
+      const filteredList = (
+        await (await request(`/transactions?limit=10&accountId=${encodeURIComponent(savings.id)}`)).json()
+      ).body;
+
+      assert.deepEqual(
+        {
+          unauthorizedStatus,
+          setupStatuses: [savingsResponse.status, walletResponse.status, categoryResponse.status],
+          creationStatuses,
+          balances: accountList
+            .filter(({ id }: { id: string }) => id === savings.id || id === wallet.id)
+            .map(({ name, currentBalanceSatang }: { name: string; currentBalanceSatang: number }) => ({
+              name,
+              currentBalanceSatang,
+            })),
+          filteredNotes: filteredList.map(({ note }: { note: string }) => note).sort(),
+        },
+        {
+          unauthorizedStatus: 401,
+          setupStatuses: [200, 200, 200],
+          creationStatuses: [201, 201, 201],
+          balances: [
+            { name: 'HTTP Savings', currentBalanceSatang: 500 },
+            { name: 'HTTP Wallet', currentBalanceSatang: 300 },
+          ],
+          filteredNotes: ['HTTP expense', 'HTTP income', 'HTTP transfer'],
+        }
+      );
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
   });
 });

@@ -3,12 +3,13 @@
 import type { CreateTransactionBody, Transaction } from '@financeos/contract/src/transactions';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftRight, Loader2, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -28,17 +29,31 @@ type FinancialAccount = {
 type Category = NonNullable<Transaction['category']>;
 type TransactionKind = Transaction['kind'] | '';
 
-const SELECT_CLASS_NAME =
-  'h-9 w-full rounded-2xl border border-transparent bg-input/50 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:opacity-50';
+const BANGKOK_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Bangkok',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
 
 function bangkokCalendarDate() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
+  return BANGKOK_DATE_FORMATTER.format(new Date());
 }
+
+function createTransactionDraft() {
+  return {
+    kind: '' as TransactionKind,
+    amountBaht: '',
+    transactionDate: bangkokCalendarDate(),
+    note: '',
+    sourceAccountId: '',
+    destinationAccountId: '',
+    categoryId: '',
+    errorMessage: '',
+  };
+}
+
+type TransactionDraft = ReturnType<typeof createTransactionDraft>;
 
 function preselectedAccountId(accounts: FinancialAccount[], selectedAccountId: string | null) {
   return selectedAccountId ?? (accounts.length === 1 ? (accounts[0]?.id ?? '') : '');
@@ -106,39 +121,36 @@ export function TransactionDialog({
   const queryClient = useQueryClient();
   const createTransactionMutation = tsr.transactions.create.useMutation({});
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<TransactionKind>('');
-  const [amountBaht, setAmountBaht] = useState('');
-  const [transactionDate, setTransactionDate] = useState(bangkokCalendarDate);
-  const [note, setNote] = useState('');
-  const [sourceAccountId, setSourceAccountId] = useState('');
-  const [destinationAccountId, setDestinationAccountId] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [draft, updateDraft] = useReducer(
+    (current: TransactionDraft, updates: Partial<TransactionDraft>) => ({ ...current, ...updates }),
+    undefined,
+    createTransactionDraft
+  );
+  const submitInProgress = useRef(false);
+  const { kind, amountBaht, transactionDate, note, sourceAccountId, destinationAccountId, categoryId, errorMessage } =
+    draft;
 
   function changeKind(nextKind: TransactionKind) {
     const accountId = preselectedAccountId(accounts, selectedAccountId);
-    setKind(nextKind);
-    setNote('');
-    setErrorMessage('');
-    setSourceAccountId(nextKind === 'expense' || nextKind === 'transfer' ? accountId : '');
-    setDestinationAccountId(nextKind === 'income' ? accountId : '');
-    if (nextKind === 'transfer') setCategoryId('');
+    updateDraft({
+      kind: nextKind,
+      note: '',
+      errorMessage: '',
+      sourceAccountId: nextKind === 'expense' || nextKind === 'transfer' ? accountId : '',
+      destinationAccountId: nextKind === 'income' ? accountId : '',
+      ...(nextKind === 'transfer' ? { categoryId: '' } : {}),
+    });
   }
 
   function resetForm() {
-    setKind('');
-    setAmountBaht('');
-    setTransactionDate(bangkokCalendarDate());
-    setNote('');
-    setSourceAccountId('');
-    setDestinationAccountId('');
-    setCategoryId('');
-    setErrorMessage('');
+    updateDraft(createTransactionDraft());
   }
 
   async function submitTransaction(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrorMessage('');
+    if (submitInProgress.current) return;
+    submitInProgress.current = true;
+    updateDraft({ errorMessage: '' });
 
     try {
       if (!kind) throw new Error('Choose a transaction kind.');
@@ -165,7 +177,9 @@ export function TransactionDialog({
       resetForm();
       toast.success(response.body.message);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not save the transaction.');
+      updateDraft({ errorMessage: error instanceof Error ? error.message : 'Could not save the transaction.' });
+    } finally {
+      submitInProgress.current = false;
     }
   }
 
@@ -185,7 +199,7 @@ export function TransactionDialog({
       </SheetTrigger>
       <SheetContent
         side='bottom'
-        className='inset-x-0 bottom-0 h-[100svh] w-full overflow-y-auto rounded-none sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:h-auto sm:max-h-[90svh] sm:w-[min(38rem,calc(100vw-2rem))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl sm:border sm:shadow-2xl'
+        className='inset-x-0 bottom-0 h-[100svh] w-full overflow-y-auto rounded-none md:left-1/2 md:top-1/2 md:bottom-auto md:h-auto md:max-h-[90svh] md:w-[min(38rem,calc(100vw-2rem))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:border md:shadow-2xl'
       >
         <SheetHeader className='border-b px-5 py-5 sm:px-6'>
           <SheetTitle className='text-lg'>Add transaction</SheetTitle>
@@ -195,20 +209,18 @@ export function TransactionDialog({
           <FieldGroup className='gap-5'>
             <Field>
               <FieldLabel htmlFor='transaction-kind'>Transaction kind</FieldLabel>
-              <select
-                id='transaction-kind'
-                className={SELECT_CLASS_NAME}
-                value={kind}
-                onChange={(event) => changeKind(event.target.value as TransactionKind)}
-                required
-              >
-                <option value=''>Choose a kind</option>
-                <option value='expense'>Expense</option>
-                <option value='income'>Income</option>
-                <option value='transfer' disabled={accounts.length < 2}>
-                  Transfer{accounts.length < 2 ? ' — needs two accounts' : ''}
-                </option>
-              </select>
+              <Select value={kind || null} onValueChange={(value) => changeKind((value ?? '') as TransactionKind)}>
+                <SelectTrigger id='transaction-kind' className='h-9 w-full'>
+                  <SelectValue placeholder='Choose a kind' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='expense'>Expense</SelectItem>
+                  <SelectItem value='income'>Income</SelectItem>
+                  <SelectItem value='transfer' disabled={accounts.length < 2}>
+                    Transfer{accounts.length < 2 ? ' — needs two accounts' : ''}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
 
             {kind ? (
@@ -223,7 +235,7 @@ export function TransactionDialog({
                       step='0.01'
                       inputMode='decimal'
                       value={amountBaht}
-                      onChange={(event) => setAmountBaht(event.target.value)}
+                      onChange={(event) => updateDraft({ amountBaht: event.target.value })}
                       required
                     />
                   </Field>
@@ -233,7 +245,7 @@ export function TransactionDialog({
                       id='transaction-date'
                       type='date'
                       value={transactionDate}
-                      onChange={(event) => setTransactionDate(event.target.value)}
+                      onChange={(event) => updateDraft({ transactionDate: event.target.value })}
                       required
                     />
                   </Field>
@@ -242,60 +254,63 @@ export function TransactionDialog({
                 {(kind === 'expense' || kind === 'transfer') && (
                   <Field>
                     <FieldLabel htmlFor='source-account'>Source account</FieldLabel>
-                    <select
-                      id='source-account'
-                      className={SELECT_CLASS_NAME}
-                      value={sourceAccountId}
-                      onChange={(event) => setSourceAccountId(event.target.value)}
-                      required
+                    <Select
+                      value={sourceAccountId || null}
+                      onValueChange={(value) => updateDraft({ sourceAccountId: value ?? '' })}
                     >
-                      <option value=''>Choose an account</option>
-                      {accounts.map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.name}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger id='source-account' className='h-9 w-full'>
+                        <SelectValue placeholder='Choose an account' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
                 )}
 
                 {(kind === 'income' || kind === 'transfer') && (
                   <Field>
                     <FieldLabel htmlFor='destination-account'>Destination account</FieldLabel>
-                    <select
-                      id='destination-account'
-                      className={SELECT_CLASS_NAME}
-                      value={destinationAccountId}
-                      onChange={(event) => setDestinationAccountId(event.target.value)}
-                      required
+                    <Select
+                      value={destinationAccountId || null}
+                      onValueChange={(value) => updateDraft({ destinationAccountId: value ?? '' })}
                     >
-                      <option value=''>Choose an account</option>
-                      {accounts.map((account) => (
-                        <option key={account.id} value={account.id} disabled={account.id === sourceAccountId}>
-                          {account.name}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger id='destination-account' className='h-9 w-full'>
+                        <SelectValue placeholder='Choose an account' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((account) => (
+                          <SelectItem key={account.id} value={account.id} disabled={account.id === sourceAccountId}>
+                            {account.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
                 )}
 
                 {kind !== 'transfer' && (
                   <Field>
                     <FieldLabel htmlFor='transaction-category'>Category</FieldLabel>
-                    <select
-                      id='transaction-category'
-                      className={SELECT_CLASS_NAME}
-                      value={categoryId}
-                      onChange={(event) => setCategoryId(event.target.value)}
-                      required
+                    <Select
+                      value={categoryId || null}
+                      onValueChange={(value) => updateDraft({ categoryId: value ?? '' })}
                     >
-                      <option value=''>Choose a category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger id='transaction-category' className='h-9 w-full'>
+                        <SelectValue placeholder='Choose a category' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {categoriesUnavailable ? (
                       <FieldError>Categories could not be loaded. Close this form and try again.</FieldError>
                     ) : null}
@@ -307,7 +322,7 @@ export function TransactionDialog({
                   <Input
                     id='transaction-note'
                     value={note}
-                    onChange={(event) => setNote(event.target.value)}
+                    onChange={(event) => updateDraft({ note: event.target.value })}
                     maxLength={200}
                     placeholder={kind === 'transfer' ? 'Move to everyday spending' : 'What was this for?'}
                     required

@@ -1,6 +1,6 @@
-import { initContract } from '@ts-rest/core';
+import { initContract, type ServerInferRequest } from '@ts-rest/core';
 import { z } from 'zod';
-import { apiSuccessResponseSchema, commonApiErrorResponses } from './api-response';
+import { apiErrorResponseSchema, apiSuccessResponseSchema, commonApiErrorResponses } from './api-response';
 
 const c = initContract();
 
@@ -43,9 +43,23 @@ export const categoryContract = c.router(
         200: apiSuccessResponseSchema(200, z.array(categorySchema)),
       },
     },
+    create: {
+      method: 'POST',
+      path: '/categories',
+      body: z.object({
+        name: z.string().trim().min(1).max(100),
+        iconName: categoryIconNameSchema.default('tag'),
+      }),
+      responses: {
+        200: apiSuccessResponseSchema(200, categorySchema),
+        409: apiErrorResponseSchema(409),
+      },
+    },
   },
   {
     commonResponses: commonApiErrorResponses,
     strictStatusCodes: true,
   }
 );
+
+export type CreateCategoryBody = ServerInferRequest<typeof categoryContract.create>['body'];

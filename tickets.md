@@ -91,7 +91,7 @@ Work the **frontier**: start any `ready-to-build` ticket whose blockers are comp
 
 ## Show the real ledger dashboard
 
-**Status:** `complete`
+**Status:** `ready-to-build`
 
 **What to build:** Replace the dashboard's sample financial data with an account-filtered view of the authenticated user's real ledger. The focused specification is `.scratch/dashboard-overview/spec.md`.
 

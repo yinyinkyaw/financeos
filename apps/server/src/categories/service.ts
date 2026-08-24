@@ -1,8 +1,9 @@
 import { db } from '@/db';
 import { categories } from '@/db/schema';
 import type { AuthUser } from '@/lib/auth';
-import { categoryIconNameSchema } from '@financeos/contract/src/category';
-import { asc, eq } from 'drizzle-orm';
+import { categoryIconNameSchema, type CreateCategoryBody } from '@financeos/contract/src/category';
+import { and, asc, eq } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 
 type CategoryReferenceSource = Pick<typeof categories.$inferSelect, 'id' | 'name' | 'color' | 'iconName'>;
 
@@ -28,4 +29,28 @@ export async function getCategories({ user }: { user: AuthUser }) {
     ...toCategoryReference(category),
     parent: category.parent?.userId === user.id ? toCategoryReference(category.parent) : null,
   }));
+}
+
+export async function createCategory({ user, body }: { user: AuthUser; body: CreateCategoryBody }) {
+  const [duplicate] = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(and(eq(categories.userId, user.id), eq(categories.name, body.name)))
+    .limit(1);
+
+  if (duplicate) {
+    return null;
+  }
+
+  const [createdCategory] = await db
+    .insert(categories)
+    .values({ id: randomUUID(), userId: user.id, name: body.name, iconName: body.iconName })
+    .returning({
+      id: categories.id,
+      name: categories.name,
+      color: categories.color,
+      iconName: categories.iconName,
+    });
+
+  return createdCategory ? { ...toCategoryReference(createdCategory), parent: null } : null;
 }

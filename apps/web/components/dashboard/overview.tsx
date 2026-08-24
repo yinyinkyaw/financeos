@@ -10,6 +10,7 @@ import { BalanceCard } from '@/components/dashboard/balance-card';
 import { CategoryIcon } from '@/components/dashboard/category-icon';
 import { TransactionDialog } from '@/components/dashboard/transaction-dialog';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { tsr } from '@/lib/tsr';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ const TRANSACTION_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
   timeZone: 'Asia/Bangkok',
 });
+const ALL_ACCOUNTS_VALUE = 'all-accounts';
 
 function formatTransactionDate(transactionDate: string) {
   return TRANSACTION_DATE_FORMATTER.format(new Date(`${transactionDate}T00:00:00+07:00`));
@@ -124,7 +126,7 @@ export function Overview() {
   const transactionsQuery = tsr.transactions.list.useQuery({
     queryKey: ['transactions', selectedAccountId ?? 'all', 10],
     queryData: { query: { limit: 10, ...(selectedAccountId ? { accountId: selectedAccountId } : {}) } },
-    enabled: accountsQuery.data?.status === 200 && !hasInvalidSelection,
+    enabled: accountsQuery.data?.status === 200,
   });
 
   useEffect(() => {
@@ -174,24 +176,32 @@ export function Overview() {
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <div>
             <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Overview</p>
-            <select
-              aria-label='Financial account'
-              className='mt-1 min-h-10 max-w-full rounded-2xl bg-transparent pr-8 text-2xl font-semibold tracking-tight outline-none focus-visible:ring-3 focus-visible:ring-ring/30'
-              value={selectedAccountId ?? ''}
-              onChange={(event) => {
+            <Select
+              value={selectedAccountId ?? ALL_ACCOUNTS_VALUE}
+              onValueChange={(value) => {
                 setSelectionNotice('');
                 router.push(
-                  event.target.value ? `/dashboard?accountId=${encodeURIComponent(event.target.value)}` : '/dashboard'
+                  value && value !== ALL_ACCOUNTS_VALUE
+                    ? `/dashboard?accountId=${encodeURIComponent(value)}`
+                    : '/dashboard'
                 );
               }}
             >
-              <option value=''>All accounts</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                aria-label='Financial account'
+                className='mt-1 h-10 max-w-full bg-transparent px-0 text-2xl font-semibold tracking-tight'
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align='start'>
+                <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <TransactionDialog
             accounts={accounts}
