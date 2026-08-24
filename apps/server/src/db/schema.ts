@@ -112,9 +112,6 @@ export const categories = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    type: text('type', {
-      enum: ['income', 'expense'],
-    }).notNull(),
     color: text('color'),
     parentId: text('parent_id').references((): AnySQLiteColumn => categories.id, {
       onDelete: 'set null',

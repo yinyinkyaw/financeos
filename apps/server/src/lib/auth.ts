@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '@/db/index';
 import * as schema from '@/db/schema';
 import { getServerEnv } from '../../env';
+import { seedStarterCategories } from '@/categories/starter-categories';
 
 const { BETTER_AUTH_URL, FRONTEND_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = getServerEnv();
 export const auth = betterAuth({
@@ -24,6 +25,15 @@ export const auth = betterAuth({
       user: schema.user,
     },
   }),
+  databaseHooks: {
+    user: {
+      create: {
+        after: async ({ id }) => {
+          await seedStarterCategories(id);
+        },
+      },
+    },
+  },
 });
 
 export type AuthSession = typeof auth.$Infer.Session.session;

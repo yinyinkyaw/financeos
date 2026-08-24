@@ -33,7 +33,6 @@ export const categoryContract = c.router(
       path: '/categories',
       body: z.object({
         name: z.string(),
-        type: z.enum(['income', 'expense']),
         color: z.string().optional(),
         parentId: z.string().nullable(),
       }),
@@ -46,7 +45,6 @@ export const categoryContract = c.router(
       path: '/categories/:id',
       body: z.object({
         name: z.string(),
-        type: z.enum(['income', 'expense']),
         color: z.string().optional(),
         parentId: z.string().nullable(),
       }),
