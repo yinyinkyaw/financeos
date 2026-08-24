@@ -1,66 +1,79 @@
 'use client';
 
-import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
-import { TransactionRows } from '@/components/dashboard/overview';
+import { TransactionTable } from '@/components/dashboard/transaction-table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { tsr } from '@/lib/tsr';
+
+const TRANSACTION_COLUMNS = [
+  'Transaction date',
+  'Transaction note',
+  'Category',
+  'Kind',
+  'Source account',
+  'Destination account',
+  'Amount',
+] as const;
+
+function TransactionTableSkeleton() {
+  return (
+    <Table className='min-w-[70rem]' aria-label='Loading detailed transaction history'>
+      <TableHeader>
+        <TableRow className='bg-muted/35 hover:bg-muted/35'>
+          {TRANSACTION_COLUMNS.map((column) => (
+            <TableHead key={column} className='h-11 first:pl-4 last:pr-4 last:text-right'>
+              {column}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {[0, 1, 2, 3].map((row) => (
+          <TableRow key={row} className='h-14'>
+            {TRANSACTION_COLUMNS.map((column) => (
+              <TableCell key={column}>
+                <Skeleton className='h-4 w-24 rounded-md' />
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 export function TransactionsPage() {
   const searchParams = useSearchParams();
   const accountId = searchParams.get('accountId');
-  const accountsQuery = tsr.financeAccounts.list.useQuery({ queryKey: ['finance-accounts'] });
   const transactionsQuery = tsr.transactions.list.useQuery({
     queryKey: ['transactions', accountId ?? 'all', 100],
     queryData: { query: { limit: 100, ...(accountId ? { accountId } : {}) } },
   });
-  const accounts = accountsQuery.data?.status === 200 ? accountsQuery.data.body.body : [];
-  const selectedAccount = accounts.find((account) => account.id === accountId) ?? null;
   const transactions = transactionsQuery.data?.status === 200 ? transactionsQuery.data.body.body : [];
 
   return (
-    <div className='mx-auto w-full max-w-5xl pb-8'>
-      <div className='flex items-center gap-3 border-b pb-4'>
-        <Button
-          variant='ghost'
-          size='icon-lg'
-          render={
-            <Link
-              href={selectedAccount ? `/dashboard?accountId=${encodeURIComponent(selectedAccount.id)}` : '/dashboard'}
-            />
-          }
-        >
-          <ArrowLeft aria-hidden='true' />
-          <span className='sr-only'>Back to Overview</span>
-        </Button>
-        <div>
-          <h1 className='text-balance text-2xl font-semibold'>Transactions</h1>
-          <p className='text-sm text-muted-foreground'>{selectedAccount ? selectedAccount.name : 'All accounts'}</p>
+    <div className='mx-auto w-full max-w-[90rem] pb-8'>
+      {transactionsQuery.isPending ? (
+        <div className='overflow-hidden rounded-xl border'>
+          <TransactionTableSkeleton />
         </div>
-      </div>
-
-      {transactionsQuery.isPending || accountsQuery.isPending ? (
-        <div className='space-y-3 py-5'>
-          {[0, 1, 2, 3].map((row) => (
-            <Skeleton key={row} className='h-16 w-full rounded-2xl' />
-          ))}
-        </div>
-      ) : transactionsQuery.isError || transactionsQuery.data?.status !== 200 || accountsQuery.data?.status !== 200 ? (
+      ) : transactionsQuery.isError || transactionsQuery.data?.status !== 200 ? (
         <div className='flex min-h-64 flex-col items-center justify-center gap-3 text-center'>
           <AlertCircle className='text-destructive' aria-hidden='true' />
-          <p className='font-medium'>Transactions could not be loaded.</p>
+          <p className='font-medium'>Transaction history could not be loaded.</p>
           <Button variant='outline' onClick={() => void transactionsQuery.refetch()}>
             <RefreshCw aria-hidden='true' />
             Retry
           </Button>
         </div>
-      ) : transactions.length === 0 ? (
-        <p className='py-16 text-center text-sm text-muted-foreground'>No transactions yet.</p>
       ) : (
-        <TransactionRows transactions={transactions} selectedAccountId={selectedAccount?.id ?? null} />
+        <div className='overflow-hidden rounded-xl border'>
+          <TransactionTable transactions={transactions} />
+        </div>
       )}
     </div>
   );

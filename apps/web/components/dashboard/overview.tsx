@@ -120,6 +120,10 @@ export function Overview() {
   const accountsQuery = tsr.financeAccounts.list.useQuery({ queryKey: ['finance-accounts'] });
   const categoriesQuery = tsr.categories.list.useQuery({ queryKey: ['categories'] });
   const accounts = accountsQuery.data?.status === 200 ? accountsQuery.data.body.body : [];
+  const accountOptions = [
+    { label: 'All accounts', value: ALL_ACCOUNTS_VALUE },
+    ...accounts.map((account) => ({ label: account.name, value: account.id })),
+  ];
   const selectedAccount = accounts.find(({ id }) => id === requestedAccountId) ?? null;
   const hasInvalidSelection = Boolean(requestedAccountId && !selectedAccount && accountsQuery.data?.status === 200);
   const selectedAccountId = selectedAccount?.id ?? null;
@@ -177,6 +181,7 @@ export function Overview() {
           <div>
             <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Overview</p>
             <Select
+              items={accountOptions}
               value={selectedAccountId ?? ALL_ACCOUNTS_VALUE}
               onValueChange={(value) => {
                 setSelectionNotice('');
@@ -194,10 +199,9 @@ export function Overview() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align='start'>
-                <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
+                {accountOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -220,7 +224,7 @@ export function Overview() {
             </h2>
             <p className='text-xs text-muted-foreground'>Latest entries by transaction date</p>
           </div>
-          <Button variant='ghost' render={<Link href={viewAllHref} />}>
+          <Button variant='ghost' nativeButton={false} render={<Link href={viewAllHref} />}>
             View all
           </Button>
         </div>

@@ -7,18 +7,18 @@ import { useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import { tsr } from '@/lib/tsr';
 
 type FinancialAccount = {
@@ -129,6 +129,16 @@ export function TransactionDialog({
   const submitInProgress = useRef(false);
   const { kind, amountBaht, transactionDate, note, sourceAccountId, destinationAccountId, categoryId, errorMessage } =
     draft;
+  const transactionKindOptions = [
+    { label: 'Expense', value: 'expense' },
+    { label: 'Income', value: 'income' },
+    {
+      label: `Transfer${accounts.length < 2 ? ' — needs two accounts' : ''}`,
+      value: 'transfer',
+    },
+  ];
+  const accountOptions = accounts.map((account) => ({ label: account.name, value: account.id }));
+  const categoryOptions = categories.map((category) => ({ label: category.name, value: category.id }));
 
   function changeKind(nextKind: TransactionKind) {
     const accountId = preselectedAccountId(accounts, selectedAccountId);
@@ -186,39 +196,44 @@ export function TransactionDialog({
   const actionLabel = kind ? `Save ${kind}` : 'Save transaction';
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
         if (!nextOpen) resetForm();
       }}
     >
-      <SheetTrigger render={<Button size='lg' className='h-10 active:scale-[0.96]' />}>
+      <DialogTrigger render={<Button size='lg' className='h-10 active:scale-[0.96]' />}>
         <Plus aria-hidden='true' />
         Add transaction
-      </SheetTrigger>
-      <SheetContent
-        side='bottom'
-        className='inset-x-0 bottom-0 h-[100svh] w-full overflow-y-auto rounded-none md:left-1/2 md:top-1/2 md:bottom-auto md:h-auto md:max-h-[90svh] md:w-[min(38rem,calc(100vw-2rem))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:border md:shadow-2xl'
-      >
-        <SheetHeader className='border-b px-5 py-5 sm:px-6'>
-          <SheetTitle className='text-lg'>Add transaction</SheetTitle>
-          <SheetDescription>Record an entry in your shared ledger.</SheetDescription>
-        </SheetHeader>
-        <form id='transaction-form' onSubmit={submitTransaction} className='flex-1 px-5 py-6 sm:px-6'>
+      </DialogTrigger>
+      <DialogContent className='flex max-h-[calc(100svh-2rem)] max-w-[38rem] flex-col gap-0 overflow-hidden p-0'>
+        <DialogHeader className='border-b px-5 py-5 pr-16 sm:px-6 sm:pr-16'>
+          <DialogTitle className='text-lg'>Add transaction</DialogTitle>
+          <DialogDescription>Record an entry in your shared ledger.</DialogDescription>
+        </DialogHeader>
+        <form
+          id='transaction-form'
+          onSubmit={submitTransaction}
+          className='min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6'
+        >
           <FieldGroup className='gap-5'>
             <Field>
               <FieldLabel htmlFor='transaction-kind'>Transaction kind</FieldLabel>
-              <Select value={kind || null} onValueChange={(value) => changeKind((value ?? '') as TransactionKind)}>
+              <Select
+                items={transactionKindOptions}
+                value={kind || null}
+                onValueChange={(value) => changeKind((value ?? '') as TransactionKind)}
+              >
                 <SelectTrigger id='transaction-kind' className='h-9 w-full'>
                   <SelectValue placeholder='Choose a kind' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='expense'>Expense</SelectItem>
-                  <SelectItem value='income'>Income</SelectItem>
-                  <SelectItem value='transfer' disabled={accounts.length < 2}>
-                    Transfer{accounts.length < 2 ? ' — needs two accounts' : ''}
-                  </SelectItem>
+                  {transactionKindOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value} disabled={option.value === 'transfer' && accounts.length < 2}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -255,6 +270,7 @@ export function TransactionDialog({
                   <Field>
                     <FieldLabel htmlFor='source-account'>Source account</FieldLabel>
                     <Select
+                      items={accountOptions}
                       value={sourceAccountId || null}
                       onValueChange={(value) => updateDraft({ sourceAccountId: value ?? '' })}
                     >
@@ -262,9 +278,9 @@ export function TransactionDialog({
                         <SelectValue placeholder='Choose an account' />
                       </SelectTrigger>
                       <SelectContent>
-                        {accounts.map((account) => (
-                          <SelectItem key={account.id} value={account.id}>
-                            {account.name}
+                        {accountOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -276,6 +292,7 @@ export function TransactionDialog({
                   <Field>
                     <FieldLabel htmlFor='destination-account'>Destination account</FieldLabel>
                     <Select
+                      items={accountOptions}
                       value={destinationAccountId || null}
                       onValueChange={(value) => updateDraft({ destinationAccountId: value ?? '' })}
                     >
@@ -283,9 +300,13 @@ export function TransactionDialog({
                         <SelectValue placeholder='Choose an account' />
                       </SelectTrigger>
                       <SelectContent>
-                        {accounts.map((account) => (
-                          <SelectItem key={account.id} value={account.id} disabled={account.id === sourceAccountId}>
-                            {account.name}
+                        {accountOptions.map((option) => (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={option.value === sourceAccountId}
+                          >
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -297,6 +318,7 @@ export function TransactionDialog({
                   <Field>
                     <FieldLabel htmlFor='transaction-category'>Category</FieldLabel>
                     <Select
+                      items={categoryOptions}
                       value={categoryId || null}
                       onValueChange={(value) => updateDraft({ categoryId: value ?? '' })}
                     >
@@ -304,9 +326,9 @@ export function TransactionDialog({
                         <SelectValue placeholder='Choose a category' />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
+                        {categoryOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -334,7 +356,7 @@ export function TransactionDialog({
             {errorMessage ? <FieldError>{errorMessage}</FieldError> : null}
           </FieldGroup>
         </form>
-        <SheetFooter className='border-t bg-background px-5 py-4 sm:px-6'>
+        <DialogFooter className='border-t bg-background px-5 py-4 sm:px-6'>
           <Button
             type='submit'
             form='transaction-form'
@@ -346,8 +368,8 @@ export function TransactionDialog({
             {kind === 'transfer' && !createTransactionMutation.isPending ? <ArrowLeftRight aria-hidden='true' /> : null}
             {createTransactionMutation.isPending ? 'Saving…' : actionLabel}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

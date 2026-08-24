@@ -10,6 +10,7 @@ export const financialAccountSummarySchema = z.object({
   currency: z.literal('THB'),
   openingBalanceSatang: z.number().int(),
   currentBalanceSatang: z.number().int(),
+  createdAt: z.string(),
 });
 
 export const financeAccountContract = c.router(
@@ -40,4 +41,5 @@ export const financeAccountContract = c.router(
   }
 );
 
+export type FinancialAccountSummary = z.infer<typeof financialAccountSummarySchema>;
 export type CreateFinancialAccountBody = ServerInferRequest<typeof financeAccountContract.create>['body'];

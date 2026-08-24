@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowLeftRight, LayoutDashboard } from 'lucide-react';
+import { ArrowLeftRight, Landmark, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 
 import { NavUser } from '@/components/dashboard/nav-user';
@@ -21,11 +21,12 @@ import {
 } from '@/components/ui/sidebar';
 import NavLogo from './nav-logo';
 
-export type DashboardPage = 'overview' | 'transactions';
+export type DashboardPage = 'overview' | 'accounts' | 'transactions';
 
 const navigationItems = [
   { page: 'overview', label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
-  { page: 'transactions', label: 'Transactions', icon: ArrowLeftRight, href: '/transactions' },
+  { page: 'accounts', label: 'Accounts', icon: Landmark, href: '/accounts' },
+  { page: 'transactions', label: 'Transaction History', icon: ArrowLeftRight, href: '/transactions' },
 ] as const satisfies ReadonlyArray<{
   page: DashboardPage;
   label: string;

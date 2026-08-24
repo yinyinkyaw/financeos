@@ -19,6 +19,7 @@ export async function getFinanceAccounts({ user }: { user: AuthUser }) {
       currency: financeAccounts.currency,
       openingBalanceSatang: financeAccounts.openingBalanceSatang,
       currentBalanceSatang,
+      createdAt: financeAccounts.createdAt,
     })
     .from(financeAccounts)
     .leftJoin(
@@ -33,7 +34,13 @@ export async function getFinanceAccounts({ user }: { user: AuthUser }) {
     )
     .where(eq(financeAccounts.userId, user.id))
     .groupBy(financeAccounts.id)
-    .orderBy(asc(financeAccounts.name));
+    .orderBy(asc(financeAccounts.name))
+    .then((accounts) =>
+      accounts.map((account) => ({
+        ...account,
+        createdAt: account.createdAt.toISOString(),
+      }))
+    );
 }
 
 export async function createFinanceAccount({ user, body }: { user: AuthUser; body: CreateFinancialAccountBody }) {
@@ -46,6 +53,7 @@ export async function createFinanceAccount({ user, body }: { user: AuthUser; bod
       name: financeAccounts.name,
       currency: financeAccounts.currency,
       openingBalanceSatang: financeAccounts.openingBalanceSatang,
+      createdAt: financeAccounts.createdAt,
     })
     .all();
 
@@ -56,5 +64,6 @@ export async function createFinanceAccount({ user, body }: { user: AuthUser; bod
   return {
     ...account,
     currentBalanceSatang: account.openingBalanceSatang,
+    createdAt: account.createdAt.toISOString(),
   };
 }

@@ -7,12 +7,17 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 
 const pages: Record<DashboardPage, { label: string }> = {
   overview: { label: 'Overview' },
-  transactions: { label: 'Transactions' },
+  accounts: { label: 'Accounts' },
+  transactions: { label: 'Transaction History' },
 };
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const activePage: DashboardPage = pathname.startsWith('/transactions') ? 'transactions' : 'overview';
+  const activePage: DashboardPage = pathname.startsWith('/accounts')
+    ? 'accounts'
+    : pathname.startsWith('/transactions')
+      ? 'transactions'
+      : 'overview';
   const currentPage = pages[activePage];
 
   return (
