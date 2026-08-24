@@ -32,12 +32,11 @@ function getAnnualExpenseSatang({ months }: CategoryExpenseRow): number {
   return months.reduce((total, month) => total + month.expenseSatang, 0);
 }
 
-function AmountCell({ amountSatang, isTotal = false }: { amountSatang: number; isTotal?: boolean }) {
+function AmountCell({ amountSatang }: { amountSatang: number }) {
   return (
     <TableCell
       className={cn(
-        'min-w-32 text-right font-mono tabular-nums',
-        isTotal && 'font-semibold',
+        'min-w-32 text-right font-mono font-normal tabular-nums',
         amountSatang === 0 && 'text-muted-foreground'
       )}
     >
@@ -98,7 +97,7 @@ function CategoryExpenseTable({ summary }: { summary: AnnualCategoryExpenseSumma
                     </span>
                   </span>
                 </TableCell>
-                <AmountCell amountSatang={getAnnualExpenseSatang(row)} isTotal />
+                <AmountCell amountSatang={getAnnualExpenseSatang(row)} />
                 {row.months.map((month) => (
                   <AmountCell key={month.month} amountSatang={month.expenseSatang} />
                 ))}
