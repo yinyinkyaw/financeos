@@ -1,14 +1,25 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, describe, it } from 'node:test';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { after, beforeEach, describe, it } from 'node:test';
 import { createHmac } from 'node:crypto';
 
 import type { AuthUser } from '@/lib/auth';
 
-const testDirectory = await mkdtemp(join(tmpdir(), 'financeos-ledger-test-'));
-process.env.DB_FILE_NAME = `file:${join(testDirectory, 'ledger.sqlite3')}`;
+function getTestDatabaseUrl(): string {
+  const testDatabaseUrl = process.env.TEST_DB_URL;
+
+  if (!testDatabaseUrl) {
+    throw new Error('TEST_DB_URL must point to an isolated MySQL test database.');
+  }
+
+  const databaseName = new URL(testDatabaseUrl).pathname.slice(1);
+  if (!databaseName.endsWith('_test')) {
+    throw new Error('TEST_DB_URL database name must end with "_test".');
+  }
+
+  return testDatabaseUrl;
+}
+
+process.env.DB_URL = getTestDatabaseUrl();
 
 const { db } = await import('@/db');
 const { categories, financeAccounts, session: sessions, transactions, user } = await import('@/db/schema');
@@ -34,66 +45,6 @@ const otherUser: AuthUser = {
   name: 'Other User',
   email: 'other@example.com',
 };
-
-before(async () => {
-  const schemaStatements = [
-    `PRAGMA foreign_keys = ON`,
-    `CREATE TABLE user (
-      id text PRIMARY KEY NOT NULL,
-      name text NOT NULL,
-      email text NOT NULL UNIQUE,
-      email_verified integer NOT NULL,
-      image text,
-      created_at integer NOT NULL,
-      updated_at integer NOT NULL
-    )`,
-    `CREATE TABLE categories (
-      id text PRIMARY KEY NOT NULL,
-      user_id text NOT NULL REFERENCES user(id),
-      name text NOT NULL,
-      color text,
-      icon_name text DEFAULT 'tag' NOT NULL,
-      created_at integer NOT NULL,
-      updated_at integer NOT NULL
-    )`,
-    `CREATE TABLE session (
-      id text PRIMARY KEY NOT NULL,
-      expires_at integer NOT NULL,
-      token text NOT NULL UNIQUE,
-      created_at integer NOT NULL,
-      updated_at integer NOT NULL,
-      ip_address text,
-      user_agent text,
-      user_id text NOT NULL REFERENCES user(id)
-    )`,
-    `CREATE TABLE finance_accounts (
-      id text PRIMARY KEY NOT NULL,
-      name text NOT NULL,
-      currency text DEFAULT 'THB' NOT NULL,
-      opening_balance_satang integer DEFAULT 0 NOT NULL,
-      user_id text NOT NULL REFERENCES user(id),
-      created_at integer NOT NULL,
-      updated_at integer NOT NULL,
-      UNIQUE(user_id, name)
-    )`,
-    `CREATE TABLE transactions (
-      id text PRIMARY KEY NOT NULL,
-      user_id text NOT NULL REFERENCES user(id),
-      source_account_id text REFERENCES finance_accounts(id),
-      destination_account_id text REFERENCES finance_accounts(id),
-      category_id text REFERENCES categories(id),
-      amount_satang integer NOT NULL,
-      note text NOT NULL,
-      transaction_date text NOT NULL,
-      created_at integer NOT NULL,
-      updated_at integer NOT NULL
-    )`,
-  ];
-
-  for (const statement of schemaStatements) {
-    await db.run(statement);
-  }
-});
 
 beforeEach(async () => {
   await db.delete(transactions);
@@ -145,7 +96,7 @@ beforeEach(async () => {
 });
 
 after(async () => {
-  await rm(testDirectory, { recursive: true, force: true });
+  await db.$client.end();
 });
 
 describe('ledger services', () => {

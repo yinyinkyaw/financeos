@@ -36,15 +36,22 @@ export async function createCategory({ user, body }: { user: AuthUser; body: Cre
     return null;
   }
 
-  const [createdCategory] = await db
+  const categoryId = randomUUID();
+
+  await db
     .insert(categories)
-    .values({ id: randomUUID(), userId: user.id, name: body.name, iconName: body.iconName })
-    .returning({
+    .values({ id: categoryId, userId: user.id, name: body.name, iconName: body.iconName });
+
+  const [createdCategory] = await db
+    .select({
       id: categories.id,
       name: categories.name,
       color: categories.color,
       iconName: categories.iconName,
-    });
+    })
+    .from(categories)
+    .where(eq(categories.id, categoryId))
+    .limit(1);
 
   return createdCategory ? toCategoryReference(createdCategory) : null;
 }

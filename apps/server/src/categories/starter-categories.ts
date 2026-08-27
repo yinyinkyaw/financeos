@@ -39,8 +39,9 @@ export async function seedStarterCategories(userId: string): Promise<number> {
     return 0;
   }
 
-  const insertedCategories = await db
+  const [insertResult] = await db
     .insert(categories)
+    .ignore()
     .values(
       missingCategories.map(({ name, iconName }) => ({
         id: createStarterCategoryId(userId, name),
@@ -48,9 +49,7 @@ export async function seedStarterCategories(userId: string): Promise<number> {
         name,
         iconName,
       }))
-    )
-    .onConflictDoNothing()
-    .returning({ id: categories.id });
+    );
 
-  return insertedCategories.length;
+  return insertResult.affectedRows;
 }

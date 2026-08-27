@@ -4,7 +4,7 @@ import type { AuthUser } from '@/lib/auth';
 import { categoryIconNameSchema } from '@financeos/contract';
 import type { CreateTransactionBody, ListTransactionsQuery, Transaction } from '@financeos/contract';
 import { and, desc, eq, inArray, or } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/sqlite-core';
+import { alias } from 'drizzle-orm/mysql-core';
 import { randomUUID } from 'node:crypto';
 
 import { parseTransactionEndpoints, TransactionRuleError } from './rules';

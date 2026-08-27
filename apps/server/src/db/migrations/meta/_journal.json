@@ -1,75 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "mysql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1774536065495,
-      "tag": "0000_busy_selene",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1774772871113,
-      "tag": "0001_brown_tarantula",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1774835362978,
-      "tag": "0002_boring_kingpin",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1787493457550,
-      "tag": "0003_bizarre_stryfe",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1787544791288,
-      "tag": "0004_loose_warbird",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1787546172466,
-      "tag": "0005_dry_blonde_phantom",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1787549594695,
-      "tag": "0006_public_the_executioner",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1787551057243,
-      "tag": "0007_quiet_khan",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1787551427158,
-      "tag": "0008_early_whistler",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1787579455290,
-      "tag": "0009_dark_ezekiel",
+      "version": "5",
+      "when": 1787799299542,
+      "tag": "0000_mysql_initial",
       "breakpoints": true
     }
   ]

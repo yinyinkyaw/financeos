@@ -1,85 +1,110 @@
 import { relations, sql } from 'drizzle-orm';
-import { check, index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import {
+  bigint,
+  boolean,
+  check,
+  datetime,
+  index,
+  mysqlTable,
+  text,
+  unique,
+  varchar,
+  date,
+} from 'drizzle-orm/mysql-core';
 
-export const user = sqliteTable('user', {
-  id: text('id').primaryKey(),
+export const user = mysqlTable('user', {
+  id: varchar('id', { length: 128 }).primaryKey(),
   name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  emailVerified: integer('email_verified', { mode: 'boolean' }).default(false).notNull(),
+  email: varchar('email', { length: 320 }).notNull().unique(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
   image: text('image'),
-  createdAt: integer('created_at', { mode: 'timestamp_ms' })
-    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+  createdAt: datetime('created_at', { mode: 'date', fsp: 3 })
+    .default(sql`CURRENT_TIMESTAMP(3)`)
     .notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+  updatedAt: datetime('updated_at', {
+    mode: 'date',
+    fsp: 3,
+  })
+    .default(sql`CURRENT_TIMESTAMP(3)`)
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
-export const session = sqliteTable(
+export const session = mysqlTable(
   'session',
   {
-    id: text('id').primaryKey(),
-    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
-    token: text('token').notNull().unique(),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    id: varchar('id', { length: 128 }).primaryKey(),
+    expiresAt: datetime('expires_at', { mode: 'date' }).notNull(),
+    token: varchar('token', { length: 255 }).notNull().unique(),
+    createdAt: datetime('created_at', { mode: 'date', fsp: 3 })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+    updatedAt: datetime('updated_at', {
+      mode: 'date',
+      fsp: 3,
+    })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
+      .$onUpdate(() => new Date())
       .notNull(),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
-    userId: text('user_id')
+    userId: varchar('user_id', { length: 128 })
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
   },
   (table) => [index('session_userId_idx').on(table.userId)]
 );
 
-export const authAccounts = sqliteTable(
+export const authAccounts = mysqlTable(
   'auth_accounts',
   {
-    id: text('id').primaryKey(),
+    id: varchar('id', { length: 128 }).primaryKey(),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
-    userId: text('user_id')
+    userId: varchar('user_id', { length: 128 })
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
     idToken: text('id_token'),
-    accessTokenExpiresAt: integer('access_token_expires_at', {
-      mode: 'timestamp_ms',
+    accessTokenExpiresAt: datetime('access_token_expires_at', {
+      mode: 'date',
     }),
-    refreshTokenExpiresAt: integer('refresh_token_expires_at', {
-      mode: 'timestamp_ms',
+    refreshTokenExpiresAt: datetime('refresh_token_expires_at', {
+      mode: 'date',
     }),
     scope: text('scope'),
     password: text('password'),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    createdAt: datetime('created_at', { mode: 'date', fsp: 3 })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+    updatedAt: datetime('updated_at', {
+      mode: 'date',
+      fsp: 3,
+    })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index('account_userId_idx').on(table.userId)]
 );
 
-export const verification = sqliteTable(
+export const verification = mysqlTable(
   'verification',
   {
-    id: text('id').primaryKey(),
-    identifier: text('identifier').notNull(),
+    id: varchar('id', { length: 128 }).primaryKey(),
+    identifier: varchar('identifier', { length: 255 }).notNull(),
     value: text('value').notNull(),
-    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    expiresAt: datetime('expires_at', { mode: 'date' }).notNull(),
+    createdAt: datetime('created_at', { mode: 'date', fsp: 3 })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+    updatedAt: datetime('updated_at', {
+      mode: 'date',
+      fsp: 3,
+    })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)]
@@ -104,22 +129,25 @@ export const authAccountRelations = relations(authAccounts, ({ one }) => ({
   }),
 }));
 
-export const categories = sqliteTable(
+export const categories = mysqlTable(
   'categories',
   {
-    id: text('id').primaryKey(),
-    userId: text('user_id')
+    id: varchar('id', { length: 128 }).primaryKey(),
+    userId: varchar('user_id', { length: 128 })
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     color: text('color'),
     iconName: text('icon_name').notNull().default('tag'),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    createdAt: datetime('created_at', { mode: 'date', fsp: 3 })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @_PURE_ */ new Date())
+    updatedAt: datetime('updated_at', {
+      mode: 'date',
+      fsp: 3,
+    })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index('categories_userId_idx').on(table.userId)]
@@ -132,24 +160,27 @@ export const categoryRelations = relations(categories, ({ one }) => ({
   }),
 }));
 
-export const financeAccounts = sqliteTable(
+export const financeAccounts = mysqlTable(
   'finance_accounts',
   {
-    id: text('id').primaryKey(),
-    name: text('name').notNull(),
+    id: varchar('id', { length: 128 }).primaryKey(),
+    name: varchar('name', { length: 255 }).notNull(),
     currency: text('currency', { enum: ['THB'] })
       .notNull()
       .default('THB'),
-    openingBalanceSatang: integer('opening_balance_satang').notNull().default(0),
-    userId: text('user_id')
+    openingBalanceSatang: bigint('opening_balance_satang', { mode: 'number' }).notNull().default(0),
+    userId: varchar('user_id', { length: 128 })
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    createdAt: datetime('created_at', { mode: 'date', fsp: 3 })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @_PURE_ */ new Date())
+    updatedAt: datetime('updated_at', {
+      mode: 'date',
+      fsp: 3,
+    })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -166,27 +197,32 @@ export const financeAccountRelations = relations(financeAccounts, ({ one }) => (
   }),
 }));
 
-export const transactions = sqliteTable(
+export const transactions = mysqlTable(
   'transactions',
   {
-    id: text('id').primaryKey(),
-    userId: text('user_id')
+    id: varchar('id', { length: 128 }).primaryKey(),
+    userId: varchar('user_id', { length: 128 })
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    sourceAccountId: text('source_account_id').references(() => financeAccounts.id, { onDelete: 'no action' }),
-    destinationAccountId: text('destination_account_id').references(() => financeAccounts.id, {
+    sourceAccountId: varchar('source_account_id', { length: 128 }).references(() => financeAccounts.id, {
       onDelete: 'no action',
     }),
-    categoryId: text('category_id').references(() => categories.id, { onDelete: 'no action' }),
-    amountSatang: integer('amount_satang').notNull(),
+    destinationAccountId: varchar('destination_account_id', { length: 128 }).references(() => financeAccounts.id, {
+      onDelete: 'no action',
+    }),
+    categoryId: varchar('category_id', { length: 128 }).references(() => categories.id, { onDelete: 'no action' }),
+    amountSatang: bigint('amount_satang', { mode: 'number' }).notNull(),
     note: text('note').notNull(),
-    transactionDate: text('transaction_date').notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    transactionDate: date('transaction_date', { mode: 'string' }).notNull(),
+    createdAt: datetime('created_at', { mode: 'date', fsp: 3 })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+    updatedAt: datetime('updated_at', {
+      mode: 'date',
+      fsp: 3,
+    })
+      .default(sql`CURRENT_TIMESTAMP(3)`)
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [

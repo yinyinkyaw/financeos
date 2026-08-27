@@ -44,18 +44,27 @@ export async function getFinanceAccounts({ user }: { user: AuthUser }) {
 }
 
 export async function createFinanceAccount({ user, body }: { user: AuthUser; body: CreateFinancialAccountBody }) {
-  const [account] = await db
+  const accountId = randomUUID();
+  const [insertResult] = await db
     .insert(financeAccounts)
-    .values({ id: randomUUID(), userId: user.id, ...body })
-    .onConflictDoNothing()
-    .returning({
+    .ignore()
+    .values({ id: accountId, userId: user.id, ...body });
+
+  if (insertResult.affectedRows === 0) {
+    return null;
+  }
+
+  const [account] = await db
+    .select({
       id: financeAccounts.id,
       name: financeAccounts.name,
       currency: financeAccounts.currency,
       openingBalanceSatang: financeAccounts.openingBalanceSatang,
       createdAt: financeAccounts.createdAt,
     })
-    .all();
+    .from(financeAccounts)
+    .where(eq(financeAccounts.id, accountId))
+    .limit(1);
 
   if (!account) {
     return null;
